@@ -206,6 +206,22 @@
   We do not assume examples are drawn from a distribution; the sequence can be adversarial. The only promise is that there exists some target function in \(\mathcal{C}\) that labels every example correctly. A good learner has a small \(M\) (and efficient update time).
 </div>
 
+<div class="proof">
+  <strong>Lemma (without loss of generality, only update on mistakes).</strong> Suppose an online learner \(A\) has mistake bound \(M\) on a concept class \(\mathcal{C}\), even if \(A\) is allowed to update after correct predictions. Then there is another learner \(A'\) with the same mistake bound \(M\) that updates only when it makes a mistake.
+</div>
+<p>
+  <strong>Proof.</strong> Define \(A'\) to make exactly the same prediction as \(A\) would from its current state, but to ignore every update that would have happened after a correct prediction. Thus \(A'\) changes state only on its own mistakes.
+</p>
+<p>
+  Consider the subsequence of examples on which \(A'\) makes mistakes. On that subsequence, \(A'\) evolves exactly like \(A\) run only on that same subsequence: both start from the same initial state, and after each mistaken example they apply the same update rule. Therefore, whenever \(A'\) makes its \(j\)-th mistake, algorithm \(A\) run on the mistake-only subsequence also makes its \(j\)-th mistake.
+</p>
+<p>
+  That subsequence is still consistent with the same target \(f \in \mathcal{C}\). Since \(A\) has mistake bound \(M\) on every consistent sequence, \(A\) can make at most \(M\) mistakes on that subsequence. Hence \(A'\) also makes at most \(M\) mistakes. So we may assume, without loss of generality, that updates happen only on mistakes.
+</p>
+<div class="intuition">
+  This reduction is helpful in proofs: all of the algorithm's real progress can be charged to mistaken rounds, while correct rounds can be treated as passive observations.
+</div>
+
 <h3>1.2 Monotone Disjunctions and the Goal (Pages 2–3)</h3>
 <p>A natural concept class is <strong>monotone disjunctions</strong> over the Boolean domain \(X = \{0,1\}^d\). Each concept is a disjunction of (unnegated) literals: \(f(x) = x_{i_1} \lor x_{i_2} \lor \cdots\). So the function is 1 if and only if at least one of the chosen coordinates is 1.</p>
 <div class="example">
@@ -244,6 +260,87 @@
 <div class="example">
   If \(|\mathcal{C}| = 1{,}000{,}000\), then \(\log_2 |\mathcal{C}| = 20\), so we make at most 20 mistakes. The bound is information-theoretically optimal (we need at least \(\log_2 |\mathcal{C}|\) bits to identify the target), but the algorithm can be computationally expensive because we must maintain and vote over the whole consistent set.
 </div>
+<div class="example">
+  <strong>Halving is not always optimal when duplicates are counted.</strong> Let the domain be \(Z=\{z_1,z_2,z_3\}\), and let the concept class be the following multiset of Boolean functions:
+  \[
+  \underbrace{100,\dots,100}_{6\text{ copies}},
+  \qquad
+  \underbrace{010,\dots,010}_{3\text{ copies}},
+  \qquad
+  \underbrace{001,\dots,001}_{2\text{ copies}},
+  \qquad
+  000.
+  \]
+  Here \(100\) means the function with values \(f(z_1)=1\), \(f(z_2)=0\), \(f(z_3)=0\). Suppose ties in the halving vote are broken in favor of label \(1\), and the target function is \(000\).
+</div>
+<p>
+  Present the points in the order \(z_1,z_2,z_3\). Initially there are \(12\) functions, with exactly \(6\) voting \(1\) on \(z_1\), so the vote ties and halving predicts \(1\), making a mistake. After removing the six copies of \(100\), the surviving class is \(010,010,010,001,001,000\). On \(z_2\), again exactly half of the survivors vote \(1\), so halving again predicts \(1\) and makes a second mistake. The survivors are now \(001,001,000\). On \(z_3\), the majority predicts \(1\), so halving makes a third mistake.
+</p>
+<div class="intuition">
+  The issue is not with the distinct concepts themselves, but with how duplicates bias the majority vote. This is why the example feels slightly artificial: halving is being applied to a multiset rather than to a set of distinct hypotheses.
+</div>
+<div class="proof">
+  <strong>A different algorithm can achieve mistake bound \(2\) on the same multiset class.</strong> Ignore duplicates and run halving on the set of distinct functions \(\{100,010,001,000\}\). This class has size \(4\), so the usual halving theorem gives mistake bound \(\log_2 4 = 2\). Thus duplicate-sensitive halving can be strictly worse than another reasonable learning strategy.
+</div>
+
+<h3>1.5A Learning a Countably Infinite Class by Doubling</h3>
+<p>
+  The finite-class halving argument extends to countably many candidate programs by gradually enlarging the prefix that we are willing to consider.
+</p>
+<div class="proof">
+  <strong>Doubling-trick algorithm.</strong> In phase \(r\), run halving on the finite prefix
+  \[
+  \mathcal{C}_r=\{f_1,f_2,\dots,f_{2^r}\}.
+  \]
+  If all functions in \(\mathcal{C}_r\) are eliminated, move to phase \(r+1\) and restart halving on the larger prefix. If the target is \(f_t\), then once \(r \ge \lceil \log_2 t\rceil\), the target belongs to \(\mathcal{C}_r\), so from that phase onward it is never eliminated.
+</div>
+<p>
+  In phase \(r\), the halving mistake bound is
+  \[
+  \log_2 |\mathcal{C}_r|=\log_2(2^r)=r.
+  \]
+  Therefore, if \(R=\lceil \log_2 t\rceil\), the total number of mistakes up through phase \(R\) is at most
+  \[
+  1+2+\cdots+R=\frac{R(R+1)}{2}=O\big((\log t)^2\big).
+  \]
+  So this simple prefix-doubling method learns the unknown target with \(O((\log t)^2)\) mistakes.
+</p>
+
+<h3>1.5B Improving to \(O(\log t)\) Mistakes With Prior Weights</h3>
+<p>
+  We can improve the doubling bound by assigning each candidate \(f_i\) a small initial prior weight and then running a weighted version of halving over the whole infinite class at once.
+</p>
+<div class="proof">
+  <strong>Weighted infinite halving.</strong> Give program \(f_i\) initial weight
+  \[
+  w_i=\frac{1}{i(i+1)}.
+  \]
+  These weights sum to \(1\), because
+  \[
+  \sum_{i=1}^{\infty}\frac{1}{i(i+1)}=\sum_{i=1}^{\infty}\left(\frac{1}{i}-\frac{1}{i+1}\right)=1.
+  \]
+  On each round, among all hypotheses still consistent with the labels seen so far, predict by weighted majority vote. If the prediction is wrong, eliminate every surviving hypothesis that agreed with the wrong label.
+</div>
+<p>
+  Let \(W_M\) be the total surviving weight after \(M\) mistakes. Initially \(W_0=1\). On every mistake, at least half of the current surviving weight voted for the wrong label, so after eliminating that side,
+  \[
+  W_{j+1}\le \frac{W_j}{2}.
+  \]
+  Hence after \(M\) mistakes,
+  \[
+  W_M \le 2^{-M}.
+  \]
+  If the target is \(f_t\), then its weight is never eliminated, so
+  \[
+  \frac{1}{t(t+1)} \le W_M \le 2^{-M}.
+  \]
+  Therefore
+  \[
+  M \le \log_2(t(t+1)) \le 1 + 2\log_2 t = O(\log t).
+  \]
+  This is the clean countable-class analogue of halving: the mistake bound is governed by the logarithm of the inverse prior weight of the target.
+</p>
+
 <p><strong>Goals for learning algorithms:</strong> we want both a small mistake bound and efficiency (polynomial time per round). Halving gives the optimal mistake bound for finite \(\mathcal{C}\) but may be intractable; elimination for disjunctions is efficient and achieves \(MB = d\) or \(2d\).</p>
 
 <h3>1.6 Decision Lists, DNF, and the Bag Algorithm (Pages 7–11)</h3>
@@ -286,6 +383,19 @@
 <div class="intuition">
   The total weight drops by a factor of at most \(3/4\) on each of our mistakes, while the best expert’s weight is \((1/2)^m\). So we cannot make too many mistakes or the total weight would fall below the best expert’s weight. The \(\log K\) term is the price for not knowing which expert is best in advance.
 </div>
+
+<div class="example">
+  <strong>Why "follow the best expert so far" can fail badly.</strong> Consider the deterministic strategy that always follows the expert with the fewest mistakes so far, breaking ties in favor of the smallest index. This strategy can be forced to make a mistake on each of \(k-1\) rounds even though one expert is perfect on all of those rounds.
+</div>
+<p>
+  Let the experts be \(E_1,\dots,E_k\). For rounds \(r=1,2,\dots,k-1\), arrange the predictions so that expert \(E_r\) is wrong on round \(r\), while every expert \(E_j\) with \(j>r\) is correct on round \(r\). Choose the true label each round so that this pattern holds.
+</p>
+<p>
+  Before round \(1\), all experts are tied at \(0\) mistakes, so the strategy follows \(E_1\), which is wrong. Before round \(2\), expert \(E_1\) has one mistake, while \(E_2,\dots,E_k\) still have zero, so the strategy follows \(E_2\), which is wrong. Continuing inductively, before round \(r\), experts \(E_1,\dots,E_{r-1}\) each have one mistake, while \(E_r,\dots,E_k\) still have zero, so tie-breaking picks \(E_r\), which we arranged to be wrong on round \(r\).
+</p>
+<p>
+  Hence this strategy makes a mistake on every one of the first \(k-1\) rounds. Meanwhile expert \(E_k\) is correct on all those rounds and therefore makes \(0\) mistakes. This is the standard cautionary example showing why weighted majority is more robust than greedily following the current empirical leader.
+</p>
 
 <h3>2.3 Randomized Weighted Majority (Page 17)</h3>
 <p><strong>Setup.</strong> We have \(K\) experts. Each round we see an instance and must predict \(\pm 1\); we get the true label and see which experts were wrong. As in Weighted Majority, we maintain a weight \(w_i\) per expert (initially 1). The difference: we use a parameter \(\epsilon \in (0, 1/2)\) and (i) <strong>penalize</strong> each incorrect expert by a factor \((1-\epsilon)\): if expert \(i\) is wrong, set \(w_i \leftarrow (1-\epsilon) w_i\); (ii) <strong>predict randomly</strong>: if the total weight of experts saying \(+1\) is \(w_+\) and the total weight of all experts is \(W\), we predict \(+1\) with probability \(w_+/W\) and \(-1\) with probability \(1 - w_+/W\). So we follow the weighted proportion. Let \(\ell_t\) be the <strong>expected loss</strong> of our algorithm at time \(t\) (we lose 1 if we guess incorrectly, 0 otherwise). Then \(\ell_t\) equals the (weighted) proportion of experts who answer incorrectly at that round. The goal is to bound the total expected loss \(\sum_t \ell_t\) in terms of the best expert’s loss \(\mathrm{opt}\).</p>
@@ -333,12 +443,12 @@
 
 <h3>2.4 Probability and Expectation (Pages 17–19)</h3>
 <p><strong>Random variables and sample spaces (p.17):</strong> A random variable \(X\) is a function from outcomes (e.g. outcomes of a random experiment) to numbers. The <strong>expected value</strong> is</p>
-<div class="formula">\[ E[X] = \sum_k \Pr[k] \cdot X(k). \]</div>
+<div class="formula">\[ \mathbb{E}[X] = \sum_k \mathbb{P}[k] \cdot X(k). \]</div>
 <p>(Or the integral in the continuous case.)</p>
 <div class="example">
-  <strong>Die roll (p.17).</strong> Roll a fair 6-sided die; \(X\) = outcome. Then \(E[X] = \frac{1}{6}(1+2+3+4+5+6) = 3.5\). <strong>Quiz returns (p.18):</strong> 40 students; each gets their own quiz back with some probability. The expected number who get their own quiz is the sum of the individual probabilities (by linearity). So we can compute \(\mathbb{E}[\text{# matches}]\) without enumerating all permutations.
+  <strong>Die roll (p.17).</strong> Roll a fair 6-sided die; \(X\) = outcome. Then \(\mathbb{E}[X] = \frac{1}{6}(1+2+3+4+5+6) = 3.5\). <strong>Quiz returns (p.18):</strong> 40 students; each gets their own quiz back with some probability. The expected number who get their own quiz is the sum of the individual probabilities (by linearity). So we can compute \(\mathbb{E}[\text{# matches}]\) without enumerating all permutations.
 </div>
-<p><strong>Linearity of expectation (p.19):</strong> \(E[X_1 + X_2 + \cdots + X_n] = E[X_1] + E[X_2] + \cdots + E[X_n]\). This holds <em>even when the \(X_i\) are dependent</em>—no independence is required. That is the “miracle”: it simplifies many calculations. We use it to analyze algorithms (e.g. expected number of mistakes) and to reason about the recursive structure of decision trees (expectation over random splits).</p>
+<p><strong>Linearity of expectation (p.19):</strong> \(\mathbb{E}[X_1 + X_2 + \cdots + X_n] = \mathbb{E}[X_1] + \mathbb{E}[X_2] + \cdots + \mathbb{E}[X_n]\). This holds <em>even when the \(X_i\) are dependent</em>—no independence is required. That is the “miracle”: it simplifies many calculations. We use it to analyze algorithms (e.g. expected number of mistakes) and to reason about the recursive structure of decision trees (expectation over random splits).</p>
 
 <h2 id="sec6">Part III: Decision Trees (Pages 20–28)</h2>
 
@@ -360,6 +470,23 @@
 <div class="intuition">
   <strong>Why greedy?</strong> Finding the optimal tree is NP-hard. Greedy gain maximization is fast and in practice often gives good trees. We’re effectively asking: “which question gives the most information about the label?”
 </div>
+<div class="example">
+  <strong>Worked Gini-splitting example.</strong> Suppose a node contains \(8\) training examples, \(4\) positive and \(4\) negative. Its Gini impurity is
+  \[
+  G\!\left(\frac{4}{8}\right)=2\cdot \frac{1}{2}\cdot \frac{1}{2}=0.5.
+  \]
+  If a feature \(x_4\) splits the data into a left child with \(5\) points \((1\text{ positive},4\text{ negative})\) and a right child with \(3\) points \((3\text{ positive},0\text{ negative})\), then the weighted post-split impurity is
+  \[
+  \frac{5}{8}G\!\left(\frac{1}{5}\right)+\frac{3}{8}G(1)
+  =
+  \frac{5}{8}\cdot 2\cdot \frac{1}{5}\cdot \frac{4}{5}+\frac{3}{8}\cdot 0
+  =0.2.
+  \]
+  So the gain is \(0.5-0.2=0.3\). If our stopping rule says “stop when gain \(<0.1\),” then we should definitely split on this feature.
+</div>
+<p>
+  Continuing recursively, if one child is already pure, we stop there. On the impure child we repeat the same calculation with the remaining candidate features, again choosing the split with smallest weighted impurity. This is exactly the bookkeeping used in hand-worked decision-tree exercises.
+</p>
 
 <h3>3.2 Potential Functions (Splitting Criteria)</h3>
 <p>We need a way to measure “error” or “impurity” at a node. If a fraction \(a\) of the node is positive, we want a function \(\Phi(a)\) that is 0 when the node is pure (\(a=0\) or \(a=1\)) and larger when \(a\) is near \(1/2\).</p>
@@ -434,6 +561,37 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
   \]
   Thus, with \(m \ge \frac{1}{\epsilon} \ln \frac{|\mathcal{C}|}{\delta}\) i.i.d. labeled examples, any <em>consistent</em> learner (one that only outputs hypotheses in \(\mathcal{C}\) that agree with all training examples) will, with probability at least \(1-\delta\), output a hypothesis whose true error is at most \(\epsilon\). This is the basic finite-class PAC sample complexity bound.
 </div>
+<div class="proof">
+  <strong>Online-to-batch conversion from a mistake bound.</strong> Suppose an online algorithm makes at most \(t\) mistakes on every realizable sequence. Given a sample
+  \[
+  S=\{(x_1,c(x_1)),\dots,(x_m,c(x_m))\}
+  \]
+  of i.i.d. labeled examples from \(D\), run the online learner on the examples in the order \(x_1,\dots,x_m\), producing hypotheses \(h_1,\dots,h_m\) just before seeing each labeled point. Then output one of these hypotheses chosen uniformly at random.
+</div>
+<p>
+  Let \(M_i\) be the indicator that \(h_i(x_i)\neq c(x_i)\). Because the sample is realizable, the online learner makes at most \(t\) mistakes, so
+  \[
+  \sum_{i=1}^m M_i \le t.
+  \]
+  Also, since \(x_i\) is independent of the past and \(h_i\) depends only on the previous examples, we have
+  \[
+  \mathbb{E}[M_i] = \mathbb{E}[\mathrm{err}_D(h_i)].
+  \]
+  Therefore
+  \[
+  \frac{1}{m}\sum_{i=1}^m \mathbb{E}[\mathrm{err}_D(h_i)]
+  =
+  \frac{1}{m}\sum_{i=1}^m \mathbb{E}[M_i]
+  \le \frac{t}{m}.
+  \]
+  If we output a uniformly random \(h_i\), its expected error is at most \(t/m\). If we instead run the learner on the first \(m\) examples and choose uniformly from the \(m+1\) hypotheses that arise before each draw \(x_1,\dots,x_{m+1}\), the same calculation yields the cleaner bound
+  \[
+  \mathbb{E}[\mathrm{err}_D(h)] \le \frac{t}{m+1}.
+  \]
+</p>
+<div class="intuition">
+  A mistake-bounded learner can only be wrong a limited number of times on the sample path. Averaging over the hypotheses it visits converts this online guarantee into a small expected fresh-sample error.
+</div>
 <div class="example"><strong>Infinite concept class (p.38):</strong> Axis-parallel rectangles in \(\mathbb{R}^2\).</div>
 <p><strong>Tightest Fitting Rectangle (p.39):</strong> Algorithm: take the smallest axis-aligned rectangle containing all positive examples. “Bad event” strips: four regions each with probability mass \(\epsilon/4\).</p>
 <div class="proof"><strong>Axis-parallel bound (p.40):</strong> Probability we miss a given strip is \((1-\epsilon/4)^m\). By union bound, failure probability \(\le 4(1-\epsilon/4)^m \le 4 e^{-\epsilon m/4}\). Set \(4 e^{-\epsilon m/4} \le \delta\) to get <strong>\(m \ge \frac{4}{\epsilon}\ln\frac{4}{\delta}\)</strong>.</div>
@@ -451,6 +609,42 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
   <strong>Why “probably” and “approximately”?</strong> “Probably” = with confidence \(1-\delta\); we allow a small chance of failure. “Approximately” = we allow error up to \(\epsilon\); we don’t demand perfect accuracy.
 </div>
 
+<div class="proof">
+  <strong>Agnostic PAC learnability implies realizable PAC learnability.</strong> If a hypothesis class \(H\) is agnostically PAC learnable under \(0/1\) loss, then it is also realizably PAC learnable.
+</div>
+<p>
+  <strong>Proof.</strong> Assume data are realizable by some target \(f\in H\). Then the joint distribution \(D\) over \((x,y)\) satisfies \(y=f(x)\) almost surely, so
+  \[
+  \min_{h\in H}\mathrm{err}_D(h)=0.
+  \]
+  If an agnostic PAC learner outputs, with probability at least \(1-\delta\), a hypothesis \(h\) satisfying
+  \[
+  \mathrm{err}_D(h)\le \min_{h'\in H}\mathrm{err}_D(h')+\epsilon,
+  \]
+  then in the realizable case this reduces to \(\mathrm{err}_D(h)\le \epsilon\). Hence the agnostic guarantee immediately implies the realizable PAC guarantee.
+</p>
+<div class="proof">
+  <strong>Bayes-optimal classifier for \(0/1\) loss.</strong> For finite label space \(Y\), define
+  \[
+  h^\star(x)\in \arg\max_{\hat y\in Y}\mathbb{P}[Y=\hat y\mid X=x].
+  \]
+  Then for every classifier \(f:X\to Y\),
+  \[
+  \mathbb{P}[h^\star(X)\neq Y]\le \mathbb{P}[f(X)\neq Y].
+  \]
+</div>
+<p>
+  <strong>Proof.</strong> Fix \(x\). The classifier \(h^\star\) chooses a label maximizing \(\mathbb{P}[Y=\hat y\mid X=x]\), equivalently minimizing the conditional \(0/1\) loss
+  \[
+  \mathbb{P}[Y\neq \hat y\mid X=x]=1-\mathbb{P}[Y=\hat y\mid X=x].
+  \]
+  Therefore
+  \[
+  \mathbb{P}[Y\neq h^\star(x)\mid X=x]\le \mathbb{P}[Y\neq f(x)\mid X=x]
+  \]
+  for every \(x\). Taking expectation over \(X\) and using the law of total expectation yields the claim.
+</p>
+
 <h3>4.2 Cross-Validation</h3>
 <p>Split data into \(k\) folds. For each fold, train on the other \(k-1\) folds and evaluate on that fold. Average the errors. Used to estimate true error and tune hyperparameters (e.g. \(\lambda\)).</p>
 <div class="intuition">
@@ -465,6 +659,60 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
 <div class="proof">
   <strong>Use for hold-out.</strong> Let \(X_i = 1\) if example \(i\) is misclassified, 0 else. Then \(\mu = \mathrm{err}_D(h)\) and \(\frac{1}{n}\sum_i X_i = \widehat{\mathrm{err}}\) (empirical error). So \(\mathbb{P}[|\widehat{\mathrm{err}} - \mathrm{err}_D(h)| \ge \Delta] \le 2e^{-2n\Delta^2}\). To have this \(\le \delta\), set \(2e^{-2n\Delta^2} = \delta\), so \(n = \frac{1}{2\Delta^2} \ln\frac{2}{\delta}\). So with \(n\) hold-out examples, empirical error is within \(\Delta\) of true error with probability \(\ge 1-\delta\).
 </div>
+
+<h3>4.4 PAC Learning From a Mistake-Bounded Learner</h3>
+<p>
+  A mistake-bound algorithm is stronger than a PAC learner in the realizable setting: once we can force only finitely many online mistakes on every consistent sequence, we can turn that online procedure into a distributional learner.
+</p>
+<div class="proof">
+  <strong>Key block argument.</strong> Fix any hypothesis \(h\) with true error \(\mathrm{err}_D(h) > \epsilon\). Then the probability that \(h\) correctly labels \(k\) fresh i.i.d. examples is at most
+  \[
+  (1-\epsilon)^k \le e^{-\epsilon k}.
+  \]
+  Therefore, if
+  \[
+  k \ge \frac{1}{\epsilon}\ln\frac{1}{\delta},
+  \]
+  then the probability that \(h\) gets an entire block of \(k\) random examples correct is at most \(\delta\).
+</div>
+<p>
+  Now suppose algorithm \(A\) has mistake bound \(t\) and only updates on mistakes. Feed it examples one by one. Every time \(A\) makes a mistake, its internal state changes. Since there can be at most \(t\) mistakes, there are at most \(t+1\) consecutive blocks of examples on which the hypothesis remains fixed. Hence after seeing
+  \[
+  (t+1)k
+  \]
+  examples, we are guaranteed that at least one of those \(t+1\) blocks has length at least \(k\).
+</p>
+<p>
+  If the hypothesis used on that length-\(k\) block had true error greater than \(\epsilon\), then by the previous calculation the probability it would classify all \(k\) examples in the block correctly would be at most \(\delta\). Therefore, with probability at least \(1-\delta\), any block of \(k\) consecutive correct predictions must come from a hypothesis whose true error is at most \(\epsilon\).
+</p>
+<div class="proof">
+  <strong>PAC learner.</strong> Choose
+  \[
+  k=\left\lceil \frac{1}{\epsilon}\ln\frac{1}{\delta}\right\rceil.
+  \]
+  Run the mistake-bounded learner \(A\) on fresh labeled examples until it achieves \(k\) consecutive correct predictions. Output the current hypothesis. Because \(A\) makes at most \(t\) mistakes, this happens after at most \((t+1)k\) examples. By the block argument above, with probability at least \(1-\delta\) the output hypothesis has error at most \(\epsilon\).
+</div>
+<p>
+  Thus any class learnable with mistake bound \(t\) is PAC-learnable in the realizable case with sample complexity
+  \[
+  O\!\left(\frac{t}{\epsilon}\log\frac{1}{\delta}\right),
+  \]
+  and runtime polynomial in the runtime of the online learner and in \(1/\epsilon,1/\delta\).
+</p>
+
+<div class="proof">
+  <strong>No-free-lunch nonlearnability for the class of all binary functions on an infinite domain.</strong> Let \(X\) be infinite and let
+  \[
+  H=\{h: X\to\{\pm1\}\}
+  \]
+  be the class of all binary classifiers on \(X\). Then \(H\) is not realizably PAC learnable.
+</div>
+<p>
+  <strong>Proof idea.</strong> Suppose toward contradiction that \(H\) were realizably PAC learnable. Pick constants \(\epsilon<1/8\) and \(\delta<1/7\). Then there would be a learner \(A\) and sample size \(m=m(\epsilon,\delta)\) such that for every realizable distribution \(D\), after seeing \(m\) examples, \(A\) outputs a hypothesis with error at most \(\epsilon\) with probability at least \(1-\delta\).
+</p>
+<p>
+  But the No-Free-Lunch theorem says that for any learner \(A\) and any \(m<|X|/2\), there exists a realizable distribution \(D\) and target \(f\in H\) such that, with probability at least \(1/7\), the output hypothesis has error at least \(1/8\). Since \(X\) is infinite, every finite \(m\) satisfies \(m<|X|/2\). This contradicts the assumed PAC guarantee. Therefore \(H\) cannot be realizably PAC learnable.
+</p>
 
 <h2 id="sec5b">Part V: VC Dimension and Radon (Pages 42–54)</h2>
 
@@ -496,6 +744,38 @@ So more complex classes (larger \(d\)) or smaller \(\epsilon\) both require more
 
 <h3>5.3 VC Dimension (continued)</h3>
 <p><strong>Equivalent definition:</strong> \(\mathcal{C}\) shatters \(S\) iff the restriction \(|\mathcal{C}_S| = 2^{|S|}\).</p>
+<div class="proof">
+  <strong>Finite-class upper bound.</strong> For every finite hypothesis class \(H\),
+  \[
+  \mathrm{VCdim}(H)\le \log_2 |H|.
+  \]
+  Indeed, if \(d=\mathrm{VCdim}(H)\), then \(H\) shatters some set of size \(d\), so it must realize all \(2^d\) labelings of that set. Hence \(2^d\le |H|\), and taking \(\log_2\) gives \(d\le \log_2|H|\).
+</div>
+<div class="proof">
+  <strong>Disjunctions over \(n\) literals have VC dimension at least \(n\).</strong> Consider the \(n\) standard basis vectors
+  \[
+  e_1,\dots,e_n \in \{0,1\}^n,
+  \]
+  where \(e_i\) has a \(1\) in coordinate \(i\) and \(0\) elsewhere. We claim that the class of disjunctions shatters this set.
+</div>
+<p>
+  Take any labeling of \(\{e_1,\dots,e_n\}\). Let
+  \[
+  I=\{i : e_i \text{ should be labeled } 1\}.
+  \]
+  Define the disjunction
+  \[
+  h_I(x)=\bigvee_{i\in I} x_i.
+  \]
+  Then for each basis vector \(e_j\), we have \(h_I(e_j)=1\) exactly when \(j\in I\), because \(e_j\) has only one active coordinate. Therefore every labeling of the \(n\) basis vectors is realized by some disjunction.
+</p>
+<p>
+  Hence the set \(\{e_1,\dots,e_n\}\) is shattered, so
+  \[
+  \mathrm{VCdim}(\text{disjunctions on } n \text{ variables}) \ge n.
+  \]
+  If negations are also allowed, the lower bound still holds a fortiori.
+</p>
 
 <h3>5.4 Radon’s Theorem and VC Dimension of Halfspaces</h3>
 <p><strong>Claim:</strong> The VC dimension of halfspaces in \(\mathbb{R}^d\) is \(d+1\).</p>
@@ -506,12 +786,55 @@ So more complex classes (larger \(d\)) or smaller \(\epsilon\) both require more
 
 <p><strong>Sample complexity (VC dimension):</strong> For \(\mathcal{C}\) with VC dimension \(d\), to get \(\mathrm{err}_D(h) \le \epsilon\) with probability \(\ge 1-\delta\), sample complexity is \(n = O\bigl(\frac{1}{\epsilon^2}\bigl(d \ln\frac{1}{\epsilon} + \ln\frac{1}{\delta}\bigr)\bigr)\) (agnostic/form in p.52: \(O\bigl(\frac{\mathrm{VC} + \log 1/\delta}{\epsilon^2}\bigr)\)). In the realizable case, \(O\bigl(\frac{1}{\epsilon}\bigl(d \ln\frac{1}{\epsilon} + \ln\frac{1}{\delta}\bigr)\bigr)\) suffices.</p>
 
+<div class="proof">
+  <strong>Exact VC dimension of axis-aligned rectangles in \(\mathbb{R}^d\).</strong> Let
+  \[
+  H_d^{\mathrm{rec}}=\{h_{a,b}: a,b\in\mathbb{R}^d,\ a\le b\},
+  \qquad
+  h_{a,b}(x)=\prod_{i=1}^d \mathbf{1}[a_i\le x_i\le b_i].
+  \]
+  Then
+  \[
+  \mathrm{VCdim}(H_d^{\mathrm{rec}})=2d.
+  \]
+</div>
+<p>
+  <strong>Lower bound \(2d\).</strong> For each coordinate \(i\), choose two points \(u_i,v_i\in\mathbb{R}^d\) that are extreme only in coordinate \(i\): for example,
+  \[
+  u_i=(-1 \text{ in coordinate } i,\ 0 \text{ elsewhere}),
+  \qquad
+  v_i=(+1 \text{ in coordinate } i,\ 0 \text{ elsewhere}).
+  \]
+  This gives \(2d\) points. For any subset of these points that we want labeled positive, choose in each coordinate \(i\) the interval \([a_i,b_i]\) to include exactly the selected extremes among \(\{u_i,v_i\}\):
+</p>
+<ul class="steps">
+  <li>If neither \(u_i\) nor \(v_i\) should be positive, choose \([a_i,b_i]\) disjoint from \([-1,1]\).</li>
+  <li>If only \(u_i\) should be positive, choose \([a_i,b_i]\) containing \(-1\) but not \(+1\).</li>
+  <li>If only \(v_i\) should be positive, choose \([a_i,b_i]\) containing \(+1\) but not \(-1\).</li>
+  <li>If both should be positive, choose \([a_i,b_i]\) containing both \(-1\) and \(+1\).</li>
+</ul>
+<p>
+  Since every point differs from the others only through these coordinatewise extremes, the Cartesian product rectangle realizes any labeling of the \(2d\) points. So \(2d\) points can be shattered.
+</p>
+<p>
+  <strong>Upper bound \(2d\).</strong> Take any set \(S\) of \(2d+1\) points in \(\mathbb{R}^d\). For each coordinate \(i\), choose one point with minimum \(i\)-th coordinate and one point with maximum \(i\)-th coordinate. This marks at most \(2d\) points total, so some point \(x^\star\in S\) is unmarked.
+</p>
+<p>
+  Label all marked extreme points positive and label \(x^\star\) negative. Any axis-aligned rectangle that contains all marked extremes must also contain every coordinate value between each minimum and maximum, and because \(x^\star\) lies coordinatewise between those extremes in every dimension, it must also lie inside the rectangle. So this labeling cannot be realized. Hence no set of \(2d+1\) points is shattered.
+</p>
+<p>
+  Combining the lower and upper bounds gives
+  \[
+  \mathrm{VCdim}(H_d^{\mathrm{rec}})=2d.
+  \]
+</p>
+
 <p><strong>Loss definitions (p.41):</strong> <strong>0/1 loss:</strong> \(\ell(h(x),y) = \mathbf{1}[h(x) \ne y]\). <strong>Empirical loss:</strong> \(\widehat{L}(h) = \frac{1}{m}\sum_{i=1}^m \ell(h(x_i),y_i)\). <strong>Population loss:</strong> \(L_D(h) = \mathbb{E}_{(x,y)\sim D}[\ell(h(x),y)]\).</p>
 
 <h3>5.5 Loss Functions and Logistic Regression</h3>
 <p><strong>Hinge loss:</strong> \(\ell(z) = \max\{1 - z, 0\}\). Used in SVMs; penalizes margin violations.</p>
 <p><strong>Logistic loss:</strong> \(\ell(z) = \ln(1 + e^{-z})\). Smooth approximation to 0-1 loss; used in logistic regression.</p>
-<p><strong>Logistic regression:</strong> Model \(\Pr[y=1 \mid x] = \sigma(w \cdot x) = \frac{1}{1 + e^{-w \cdot x}}\). Maximizing log-likelihood is equivalent to minimizing \(-\sum_i \ln(1 + e^{-y_i w^T x_i})\). This objective is convex; optimize with gradient descent.</p>
+<p><strong>Logistic regression:</strong> Model \(\mathbb{P}[y=1 \mid x] = \sigma(w \cdot x) = \frac{1}{1 + e^{-w \cdot x}}\). Maximizing log-likelihood is equivalent to minimizing \(-\sum_i \ln(1 + e^{-y_i w^T x_i})\). This objective is convex; optimize with gradient descent.</p>
 
 <!-- ========== Part VI: Pages 55–61 (Compression, Oracles, Domain Adaptation, TDS) ========== -->
 <h2 id="sec55">Part VI: Compression, Oracles, Domain Adaptation, TDS (Pages 55–61)</h2>
@@ -629,6 +952,23 @@ So we compare how often \(f_1\) and \(f_2\) disagree under \(D\) versus under \(
 </div>
 <p><strong>Note.</strong> The bound is dimension-independent. If \(\rho\) is very small (e.g. exponentially small in dimension), the bound can be large. If \(\rho\) is constant or inverse polynomial, we get a polynomial mistake bound.</p>
 
+<div class="example">
+  <strong>Why perceptron can have an infinite mistake bound on a fixed dataset.</strong> If the data are not linearly separable, repeatedly cycling through the same finite training set can cause the perceptron to keep making mistakes forever.
+</div>
+<p>
+  A minimal example is the one-point contradictory dataset
+  \[
+  S=\{(x,+1),(x,-1)\}
+  \]
+  for any nonzero vector \(x\). No linear classifier can label the same input both positive and negative, so the dataset is not realizable by a halfspace.
+</p>
+<p>
+  Start from \(w=0\). On the first copy \((x,+1)\), the perceptron predicts incorrectly and updates to \(w \leftarrow w + x\). On the second copy \((x,-1)\), it now predicts \(+1\), makes a mistake, and updates to \(w \leftarrow w - x = 0\). We have returned to the initial state. Thus every full pass through the dataset repeats the same two mistakes, so the mistake process never terminates.
+</p>
+<div class="intuition">
+  The perceptron convergence theorem requires separability with positive margin. Once that assumption fails, the algorithm is no longer guaranteed to settle down.
+</div>
+
 <h3>7.5 Kernel Perceptron</h3>
 <p>To learn non-linear boundaries, map \(x \mapsto \phi(x)\) into a high-dimensional feature space and run perceptron in that space. The weight vector is then a linear combination of the mistaken examples: \(w = \sum_j \alpha_j y_j \phi(x_j)\), so predictions are \(\mathrm{sign}\bigl(\sum_j \alpha_j y_j \,\phi(x_j) \cdot \phi(x)\bigr)\). The update only needs inner products \(\phi(x) \cdot \phi(z)\). A <strong>kernel</strong> \(K(x,z) = \phi(x) \cdot \phi(z)\) computes this without explicitly constructing \(\phi\). Example: \(K(x,z) = (x \cdot z)^2\) corresponds to a quadratic feature map; we get polynomial boundaries with cost in the original dimension.</p>
 <div class="intuition">
@@ -647,6 +987,33 @@ So we compare how often \(f_1\) and \(f_2\) disagree under \(D\) versus under \(
 \]
 When we restrict to linear functions \(f(x) = w^T x\) (or \(f(x) = \beta_0 + \beta_1 x\) in one dimension), this becomes a minimization over the weight vector \(w\).</p>
 <p><strong>Optimal function in principle.</strong> The function that minimizes mean squared error over all (not necessarily linear) predictors is the <strong>conditional mean</strong>: \(f^*(x) = \mathbb{E}[y \mid x]\). Linear regression is the best <em>linear</em> approximation to this when we work in the space of linear functions.</p>
+<div class="proof">
+  <strong>Why the conditional mean minimizes squared loss.</strong> For any measurable function \(g(X)\),
+  \[
+  Y-g(X)=\bigl(Y-\mathbb{E}[Y\mid X]\bigr)+\bigl(\mathbb{E}[Y\mid X]-g(X)\bigr).
+  \]
+  Squaring and taking expectation gives
+  \[
+  \mathbb{E}\bigl[(Y-g(X))^2\bigr]
+  =
+  \mathbb{E}\bigl[(Y-\mathbb{E}[Y\mid X])^2\bigr]
+  +
+  \mathbb{E}\bigl[(\mathbb{E}[Y\mid X]-g(X))^2\bigr]
+  +
+  2\,\mathbb{E}\Bigl[(Y-\mathbb{E}[Y\mid X])(\mathbb{E}[Y\mid X]-g(X))\Bigr].
+  \]
+  The cross term is \(0\), because \(\mathbb{E}[Y-\mathbb{E}[Y\mid X]\mid X]=0\). Hence
+  \[
+  \mathbb{E}\bigl[(Y-g(X))^2\bigr]
+  =
+  \mathbb{E}\bigl[(Y-\mathbb{E}[Y\mid X])^2\bigr]
+  +
+  \mathbb{E}\bigl[(\mathbb{E}[Y\mid X]-g(X))^2\bigr]
+  \ge
+  \mathbb{E}\bigl[(Y-\mathbb{E}[Y\mid X])^2\bigr].
+  \]
+  Therefore \(g^\star(X)=\mathbb{E}[Y\mid X]\) minimizes mean squared error over all predictors \(g\).
+</div>
 <p><strong>Simple linear regression (scalar \(x\)).</strong> Take \(f(x) = \beta_0 + \beta_1 x\). Setting the partial derivatives of \(\sum_i (y_i - \beta_0 - \beta_1 x_i)^2\) to zero gives the closed-form solutions:
 \[
 \beta_1 = \frac{\mathrm{cov}(x,y)}{\mathrm{var}(x)}, \qquad \beta_0 = \bar{y} - \beta_1 \bar{x}.
@@ -752,6 +1119,44 @@ for all \(x, y\). So the linear approximation at \(x\) is a global <em>under</em
 Batch gradient descent uses this full gradient at each iteration—expensive when \(m\) is large.</p>
 <p><strong>Stochastic gradient descent (SGD).</strong> Instead of summing over all \(m\) points, SGD picks one index \(j\) uniformly at random and updates \(w\) using only that example’s gradient. So each update is much cheaper. The key fact: <strong>the expected value of the SGD update equals the full GD update</strong>—\(\mathbb{E}[w_{\mathrm{new},\mathrm{SGD}}] = w_{\mathrm{new},\mathrm{GD}}\) when the expectation is over the random choice of \(j\). So SGD is an unbiased, efficient approximation to full gradient descent and is standard for large datasets.</p>
 
+<div class="proof">
+  <strong>Sigmoid perceptron with MSE.</strong> Suppose labels are \(y_i\in\{0,1\}\), the score is \(w^T x_i\), and the prediction is the sigmoid
+  \[
+  \sigma(z)=\frac{1}{1+e^{-z}}.
+  \]
+  The mean squared error on a dataset \(S=\{(x_i,y_i)\}_{i=1}^m\) is
+  \[
+  \mathrm{MSE}(w)=\frac{1}{m}\sum_{i=1}^m \bigl(\sigma(w^T x_i)-y_i\bigr)^2.
+  \]
+</div>
+<p>
+  Differentiating the sigmoid gives
+  \[
+  \sigma'(z)=\frac{e^{-z}}{(1+e^{-z})^2}
+  =\frac{1}{1+e^{-z}}\left(1-\frac{1}{1+e^{-z}}\right)
+  =\sigma(z)\bigl(1-\sigma(z)\bigr).
+  \]
+  Therefore, by the chain rule,
+  \[
+  \nabla \mathrm{MSE}(w)
+  =
+  \frac{2}{m}\sum_{i=1}^m
+  \bigl(\sigma(w^T x_i)-y_i\bigr)\,
+  \sigma(w^T x_i)\bigl(1-\sigma(w^T x_i)\bigr)\,x_i.
+  \]
+  Gradient descent with step size \(\eta>0\) becomes
+  \[
+  w \leftarrow
+  w
+  -
+  \eta\,
+  \frac{2}{m}\sum_{i=1}^m
+  \bigl(\sigma(w^T x_i)-y_i\bigr)\,
+  \sigma(w^T x_i)\bigl(1-\sigma(w^T x_i)\bigr)\,x_i.
+  \]
+  This is the batch update rule for a single sigmoid unit trained under mean squared error.
+</p>
+
 <h3>9.4 Smoothness and Convergence Analysis (Pages 79–81)</h3>
 <p><strong>\(L\)-smoothness.</strong> A differentiable function \(f\) has <strong>\(L\)-Lipschitz gradients</strong> (or is <strong>\(L\)-smooth</strong>) if
 \[
@@ -770,6 +1175,41 @@ So each step guarantees a decrease of at least \(\frac{1}{2L}\|\nabla f(w^k)\|^2
 So we get an \(O(1/T)\) rate: after \(T\) steps, at least one iterate has gradient norm squared of order \(1/T\). To reach a point where \(\|\nabla f(w)\|^2 \le \epsilon\), we need \(T = O(1/\epsilon)\) iterations.</p>
 <div class="defn"><strong>Subgradient (p.79).</strong> For non-differentiable losses (e.g. hinge \(\max\{0, 1-z\}\)), we use a <strong>subgradient</strong>: a vector \(v\) such that \(f(w') \ge f(w) + v^T(w' - w)\) for all \(w'\). Subgradient descent uses \(v\) in place of \(\nabla f(w)\) when the gradient does not exist.</div>
 
+<div class="proof">
+  <strong>Perceptron as SGD on the loss \(\ell(z)=\max(0,-z)\).</strong> Consider binary labels \(y_i\in\{\pm1\}\) and objective
+  \[
+  \frac{1}{m}\sum_{i=1}^m \ell\bigl(y_i w^T x_i\bigr),
+  \qquad
+  \ell(z)=\max(0,-z).
+  \]
+  For one example \((x_i,y_i)\), the loss is
+  \[
+  \ell_i(w)=\max(0,-y_i w^T x_i).
+  \]
+  A subgradient is
+  \[
+  \partial \ell_i(w)=
+  \begin{cases}
+    \{0\}, & y_i w^T x_i > 0,\\
+    \{-y_i x_i\}, & y_i w^T x_i < 0.
+  \end{cases}
+  \]
+  Therefore an SGD step with step size \(\eta\) is
+  \[
+  w \leftarrow
+  \begin{cases}
+    w, & y_i w^T x_i > 0,\\
+    w + \eta y_i x_i, & y_i w^T x_i < 0.
+  \end{cases}
+  \]
+</div>
+<p>
+  This is exactly the perceptron update rule, up to the learning-rate factor \(\eta\). In particular, when \(\eta=1\), stochastic subgradient descent on the loss \(\ell(z)=\max(0,-z)\) coincides with the perceptron algorithm.
+</p>
+<div class="intuition">
+  The perceptron is not just an ad hoc rule: it is SGD on a convex loss that penalizes only currently misclassified examples.
+</div>
+
 <h3>9.5 Loss Functions and Logistic Regression (Pages 82–84)</h3>
 <p><strong>Loss comparison.</strong> In classification we predict with \(\mathrm{sign}(w^T x)\) and measure quality with a loss \(\ell(z)\) where \(z = y\, (w^T x)\) (so a correct prediction has \(z > 0\)).</p>
 <ul>
@@ -778,7 +1218,7 @@ So we get an \(O(1/T)\) rate: after \(T\) steps, at least one iterate has gradie
   <li><strong>Logistic loss:</strong> \(\ell(z) = \ln(1 + e^{-z})\). Convex and smooth; well-suited for gradient descent.</li>
   <li><strong>Square loss:</strong> \(\ell(z) = (1-z)^2\). Smooth and convex; often used in regression-style classification.</li>
 </ul>
-<p><strong>Logistic regression.</strong> We model the probability of the positive class with the <strong>sigmoid</strong> \(\sigma(t) = \frac{1}{1 + e^{-t}}\). So \(\Pr[y = 1 \mid x] = \sigma(w \cdot x)\). Given data \((x^i, y^i)\), we maximize the probability of the observed labels, or equivalently minimize the <strong>negative log-likelihood</strong>:
+<p><strong>Logistic regression.</strong> We model the probability of the positive class with the <strong>sigmoid</strong> \(\sigma(t) = \frac{1}{1 + e^{-t}}\). So \(\mathbb{P}[y = 1 \mid x] = \sigma(w \cdot x)\). Given data \((x^i, y^i)\), we maximize the probability of the observed labels, or equivalently minimize the <strong>negative log-likelihood</strong>:
 \[
 -\sum_i \ln\bigl(1 + e^{-y^i w^T x^i}\bigr).
 \]
@@ -1172,7 +1612,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     <p>
       <strong>Proof.</strong> Independence gives
       \[
-      \Pr[\text{all }t\text{ runs fail}] = \eta^t.
+      \mathbb{P}[\text{all }t\text{ runs fail}] = \eta^t.
       \]
       Thus \(\eta^t\le \delta\) exactly when
       \[
@@ -1662,11 +2102,11 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     <p>
       Its mean is
       \[
-      \mathbb E[\widehat\alpha]
+      \mathbb{E}[\widehat\alpha]
       =
       \alpha
       +
-      \frac{\sum_i (x_i-\bar x)\mathbb E[\epsilon_i]}{\sum_i (x_i-\bar x)^2}
+      \frac{\sum_i (x_i-\bar x)\mathbb{E}[\epsilon_i]}{\sum_i (x_i-\bar x)^2}
       =
       \alpha.
       \]
@@ -2612,7 +3052,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     <p>
       Suppose
       \[
-      \mathbb E[Y\mid X=x] = u(w_\ast^\top x),
+      \mathbb{E}[Y\mid X=x] = u(w_\ast^\top x),
       \]
       where \(u:\mathbb R\to\mathbb R\) is monotone increasing and \(1\)-Lipschitz. The matching loss at a point
       \((x,y)\) is
@@ -2717,9 +3157,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \qquad
       \Delta = u(a)-u(a_\ast).
       \]
-      Since \(\mathbb E[Y\mid X=x]=u(a_\ast)\), one has
+      Since \(\mathbb{E}[Y\mid X=x]=u(a_\ast)\), one has
       \[
-      \mathbb E_{Y\sim D_x}[\ell(w;x,Y)]-\mathbb E_{Y\sim D_x}[\ell(w_\ast;x,Y)]
+      \mathbb{E}_{Y\sim D_x}[\ell(w;x,Y)]-\mathbb{E}_{Y\sim D_x}[\ell(w_\ast;x,Y)]
       =
       \int_{a_\ast}^{a}\big(u(z)-u(a_\ast)\big)\,dz.
       \]
@@ -2728,7 +3168,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       <strong>Theorem.</strong>
       For every fixed \(x\),
       \[
-      \mathbb E_{Y\sim D_x}[\ell(w;x,Y)]-\mathbb E_{Y\sim D_x}[\ell(w_\ast;x,Y)]
+      \mathbb{E}_{Y\sim D_x}[\ell(w;x,Y)]-\mathbb{E}_{Y\sim D_x}[\ell(w_\ast;x,Y)]
       \ge \frac12\big(u(w^\top x)-u(w_\ast^\top x)\big)^2.
       \]
     </div>
@@ -2840,7 +3280,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     <p>
       If the labels are encoded as \(y_i\in\{\pm 1\}\) and one models
       \[
-      \Pr[Y=y\mid X=x] = \sigma(y\,w^\top x),
+      \mathbb{P}[Y=y\mid X=x] = \sigma(y\,w^\top x),
       \]
       then the sample likelihood is
       \[
@@ -2888,11 +3328,11 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     <p>
       Logistic regression has the form
       \[
-      \Pr[Y=1\mid X=x]=\sigma(w^\top x),
+      \mathbb{P}[Y=1\mid X=x]=\sigma(w^\top x),
       \]
       while a one-hidden-layer neural network replaces the linear score \(w^\top x\) by a nonlinear feature map:
       \[
-      \Pr[Y=1\mid X=x]
+      \mathbb{P}[Y=1\mid X=x]
       =
       \sigma\!\left(\sum_{j=1}^m a_j\,\sigma((w^{(j)})^\top x)\right).
       \]
