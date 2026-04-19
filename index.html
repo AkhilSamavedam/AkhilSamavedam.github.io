@@ -553,7 +553,7 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
 <p><strong>PAC learner requirements (p.34):</strong> Polynomial sample and time complexity. <strong>Consistency model:</strong> Output any \(h \in \mathcal{C}\) consistent with the sample.</p>
 <div class="proof"><strong>Consistency / Union bound (p.35–37):</strong> Probability mass of “bad” hypotheses consistent with \(m\) samples \(\le K(1-\epsilon)^m\). Set \(K e^{-\epsilon m} \le \delta\) ⇒ \(m \ge \frac{1}{\epsilon} \ln\frac{|\mathcal{C}|}{\delta}\).</div>
 <div class="proof">
-  <strong>Naive PAC bound via “challenges”.</strong> Fix a finite concept class \(\mathcal{C}\) and a target function \(c \in \mathcal{C}\). Let a hypothesis \(h \in \mathcal{C}\) be called <em>bad</em> if its true error is larger than \(\epsilon\): \(\mathrm{err}_D(h) = \Pr_{x \sim D}[h(x) \ne c(x)] > \epsilon\). Think of each training example as a <strong>challenge</strong> to every bad hypothesis: on that example, there is at least an \(\epsilon\) chance (under the draw from \(D\)) that the bad hypothesis disagrees with the target and so is “caught.” The probability that a fixed bad hypothesis <em>escapes</em> a single challenge (agrees with \(c\) on that example) is at most \(1-\epsilon\). If we draw \(m\) i.i.d. challenges, the probability that this same bad hypothesis passes all of them (is consistent with all \(m\) samples) is at most \((1-\epsilon)^m\). Now there may be many bad hypotheses. In the worst case, every hypothesis in \(\mathcal{C}\) is bad; there are \(|\mathcal{C}|\) of them. By the union bound, the probability that <em>some</em> bad hypothesis is consistent with all \(m\) samples is at most \(|\mathcal{C}|(1-\epsilon)^m\). Using \(1-x \le e^{-x}\), we get \((1-\epsilon)^m \le e^{-\epsilon m}\), so this failure probability is \(\le |\mathcal{C}| e^{-\epsilon m}\). To make this \(\le \delta\), we require
+  <strong>Naive PAC bound via “challenges”.</strong> Fix a finite concept class \(\mathcal{C}\) and a target function \(c \in \mathcal{C}\). Let a hypothesis \(h \in \mathcal{C}\) be called <em>bad</em> if its true error is larger than \(\epsilon\): \(\mathrm{err}_D(h) = \mathbb{P}_{x \sim D}[h(x) \ne c(x)] > \epsilon\). Think of each training example as a <strong>challenge</strong> to every bad hypothesis: on that example, there is at least an \(\epsilon\) chance (under the draw from \(D\)) that the bad hypothesis disagrees with the target and so is “caught.” The probability that a fixed bad hypothesis <em>escapes</em> a single challenge (agrees with \(c\) on that example) is at most \(1-\epsilon\). If we draw \(m\) i.i.d. challenges, the probability that this same bad hypothesis passes all of them (is consistent with all \(m\) samples) is at most \((1-\epsilon)^m\). Now there may be many bad hypotheses. In the worst case, every hypothesis in \(\mathcal{C}\) is bad; there are \(|\mathcal{C}|\) of them. By the union bound, the probability that <em>some</em> bad hypothesis is consistent with all \(m\) samples is at most \(|\mathcal{C}|(1-\epsilon)^m\). Using \(1-x \le e^{-x}\), we get \((1-\epsilon)^m \le e^{-\epsilon m}\), so this failure probability is \(\le |\mathcal{C}| e^{-\epsilon m}\). To make this \(\le \delta\), we require
   \[
     |\mathcal{C}| e^{-\epsilon m} \le \delta
     \quad\Longrightarrow\quad
@@ -858,31 +858,31 @@ If \(\lambda\) is large, no single function in \(\mathcal{C}\) can do well on bo
 So if we fit the training set well and the distributions are close (and \(\lambda\) is small), we can still hope for good test performance.</p>
 <p><strong>Discrepancy distance.</strong> The <strong>discrepancy</strong> is a distance between \(D_{\mathrm{train}}\) and \(D_{\mathrm{test}}\) that is tailored to the concept class \(\mathcal{C}\). It measures the maximum difference, over pairs of concepts in \(\mathcal{C}\), in the probability that they disagree on a random example:
 \[
-\mathrm{disc}(D, D') = \sup_{f_1, f_2 \in \mathcal{C}} \;\Bigl| \Pr_{x \sim D}[f_1(x) \neq f_2(x)] - \Pr_{x \sim D'}[f_1(x) \neq f_2(x)] \Bigr|.
+\mathrm{disc}(D, D') = \sup_{f_1, f_2 \in \mathcal{C}} \;\Bigl| \mathbb{P}_{x \sim D}[f_1(x) \neq f_2(x)] - \mathbb{P}_{x \sim D'}[f_1(x) \neq f_2(x)] \Bigr|.
 \]
 So we compare how often \(f_1\) and \(f_2\) disagree under \(D\) versus under \(D'\). If this is small, the two distributions “look similar” to the class \(\mathcal{C}\). When \(\lambda = 0\) (a perfect joint classifier exists), the setting is often referred to as <strong>covariate shift</strong>.</p>
 <div class="proof">
   <strong>Proof of the generalization bound under shift.</strong> We show \(\mathrm{err}_{D_{\mathrm{test}}}(h) \le \mathrm{err}_{D_{\mathrm{train}}}(h) + \lambda + \mathrm{disc}(D_{\mathrm{train}}, D_{\mathrm{test}})\).<br><br>
   <strong>Step 1 — Use the best \(c\) to bound test error.</strong> For any \(h\) and any \(c \in \mathcal{C}\), the triangle inequality for 0-1 loss gives \(\mathbf{1}[h(x) \neq y] \le \mathbf{1}[h(x) \neq c(x)] + \mathbf{1}[c(x) \neq y]\). Taking expectation over \(D_{\mathrm{test}}\):
   \[
-  \mathrm{err}_{D_{\mathrm{test}}}(h) = \mathbb{E}_{D_{\mathrm{test}}}[\mathbf{1}[h \neq y]] \le \Pr_{D_{\mathrm{test}}}[h \neq c] + \mathrm{err}_{D_{\mathrm{test}}}(c).
+  \mathrm{err}_{D_{\mathrm{test}}}(h) = \mathbb{E}_{D_{\mathrm{test}}}[\mathbf{1}[h \neq y]] \le \mathbb{P}_{D_{\mathrm{test}}}[h \neq c] + \mathrm{err}_{D_{\mathrm{test}}}(c).
   \]
-  So for every \(c \in \mathcal{C}\), \(\mathrm{err}_{D_{\mathrm{test}}}(h) \le \Pr_{D_{\mathrm{test}}}[h \neq c] + \mathrm{err}_{D_{\mathrm{test}}}(c)\). We choose \(c = c^*\) that minimizes \(\mathrm{err}_{D_{\mathrm{train}}}(c) + \mathrm{err}_{D_{\mathrm{test}}}(c)\), so \(\lambda = \mathrm{err}_{D_{\mathrm{train}}}(c^*) + \mathrm{err}_{D_{\mathrm{test}}}(c^*)\).<br><br>
+  So for every \(c \in \mathcal{C}\), \(\mathrm{err}_{D_{\mathrm{test}}}(h) \le \mathbb{P}_{D_{\mathrm{test}}}[h \neq c] + \mathrm{err}_{D_{\mathrm{test}}}(c)\). We choose \(c = c^*\) that minimizes \(\mathrm{err}_{D_{\mathrm{train}}}(c) + \mathrm{err}_{D_{\mathrm{test}}}(c)\), so \(\lambda = \mathrm{err}_{D_{\mathrm{train}}}(c^*) + \mathrm{err}_{D_{\mathrm{test}}}(c^*)\).<br><br>
   <strong>Step 2 — Add and subtract the train error.</strong> Write the test-side disagreement as train disagreement plus the difference:
   \[
-  \Pr_{D_{\mathrm{test}}}[h \neq c^*] = \Pr_{D_{\mathrm{train}}}[h \neq c^*] + \Bigl( \Pr_{D_{\mathrm{test}}}[h \neq c^*] - \Pr_{D_{\mathrm{train}}}[h \neq c^*] \Bigr).
+  \mathbb{P}_{D_{\mathrm{test}}}[h \neq c^*] = \mathbb{P}_{D_{\mathrm{train}}}[h \neq c^*] + \Bigl( \mathbb{P}_{D_{\mathrm{test}}}[h \neq c^*] - \mathbb{P}_{D_{\mathrm{train}}}[h \neq c^*] \Bigr).
   \]
-  The term in parentheses is bounded by the discrepancy: \(\bigl| \Pr_{D_{\mathrm{test}}}[h \neq c^*] - \Pr_{D_{\mathrm{train}}}[h \neq c^*] \bigr| \le \mathrm{disc}(D_{\mathrm{train}}, D_{\mathrm{test}})\).<br><br>
+  The term in parentheses is bounded by the discrepancy: \(\bigl| \mathbb{P}_{D_{\mathrm{test}}}[h \neq c^*] - \mathbb{P}_{D_{\mathrm{train}}}[h \neq c^*] \bigr| \le \mathrm{disc}(D_{\mathrm{train}}, D_{\mathrm{test}})\).<br><br>
   <strong>Step 3 — Relate train disagreement to training loss.</strong> On the training distribution, \(\mathbf{1}[h(x) \neq c^*(x)] \le \mathbf{1}[h(x) \neq y] + \mathbf{1}[c^*(x) \neq y]\), so
   \[
-  \Pr_{D_{\mathrm{train}}}[h \neq c^*] \le \mathrm{err}_{D_{\mathrm{train}}}(h) + \mathrm{err}_{D_{\mathrm{train}}}(c^*).
+  \mathbb{P}_{D_{\mathrm{train}}}[h \neq c^*] \le \mathrm{err}_{D_{\mathrm{train}}}(h) + \mathrm{err}_{D_{\mathrm{train}}}(c^*).
   \]
   <strong>Step 4 — Rearrange.</strong> Putting it together:
   \[
-  \mathrm{err}_{D_{\mathrm{test}}}(h) \le \Pr_{D_{\mathrm{test}}}[h \neq c^*] + \mathrm{err}_{D_{\mathrm{test}}}(c^*)
+  \mathrm{err}_{D_{\mathrm{test}}}(h) \le \mathbb{P}_{D_{\mathrm{test}}}[h \neq c^*] + \mathrm{err}_{D_{\mathrm{test}}}(c^*)
   \]
   \[
-  \le \Pr_{D_{\mathrm{train}}}[h \neq c^*] + \mathrm{disc}(D_{\mathrm{train}}, D_{\mathrm{test}}) + \mathrm{err}_{D_{\mathrm{test}}}(c^*)
+  \le \mathbb{P}_{D_{\mathrm{train}}}[h \neq c^*] + \mathrm{disc}(D_{\mathrm{train}}, D_{\mathrm{test}}) + \mathrm{err}_{D_{\mathrm{test}}}(c^*)
   \]
   \[
   \le \mathrm{err}_{D_{\mathrm{train}}}(h) + \mathrm{err}_{D_{\mathrm{train}}}(c^*) + \mathrm{err}_{D_{\mathrm{test}}}(c^*) + \mathrm{disc}(D_{\mathrm{train}}, D_{\mathrm{test}}) = \mathrm{err}_{D_{\mathrm{train}}}(h) + \lambda + \mathrm{disc}(D_{\mathrm{train}}, D_{\mathrm{test}}).
@@ -1686,7 +1686,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       <strong>Lemma.</strong>
       Let
       \[
-      \epsilon_t = \Pr_{i\sim D^{(t)}}[h_t(x_i)\neq y_i].
+      \epsilon_t = \mathbb{P}_{i\sim D^{(t)}}[h_t(x_i)\neq y_i].
       \]
       Suppose AdaBoost updates the weights by leaving misclassified examples unchanged and multiplying correctly
       classified examples by
@@ -1695,7 +1695,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       followed by normalization. Then
       \[
-      \Pr_{i\sim D^{(t+1)}}[h_t(x_i)=y_i]=\Pr_{i\sim D^{(t+1)}}[h_t(x_i)\neq y_i]=\frac12.
+      \mathbb{P}_{i\sim D^{(t+1)}}[h_t(x_i)=y_i]=\mathbb{P}_{i\sim D^{(t+1)}}[h_t(x_i)\neq y_i]=\frac12.
       \]
     </div>
     <p>
@@ -1737,7 +1737,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       Hence the total unnormalized mass is \(2\epsilon_t\). After normalization,
       \[
-      \Pr_{i\sim D^{(t+1)}}[h_t(x_i)=y_i]
+      \mathbb{P}_{i\sim D^{(t+1)}}[h_t(x_i)=y_i]
       =
       \frac{\epsilon_t}{2\epsilon_t}
       =
@@ -1745,7 +1745,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       and likewise
       \[
-      \Pr_{i\sim D^{(t+1)}}[h_t(x_i)\neq y_i]
+      \mathbb{P}_{i\sim D^{(t+1)}}[h_t(x_i)\neq y_i]
       =
       \frac{\epsilon_t}{2\epsilon_t}
       =
@@ -2017,7 +2017,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       A confidence interval is a high-probability interval for an unknown population quantity. If \(\hat\theta\) is an
       estimator of \(\theta\), then a level-\(1-\delta\) interval is any interval \([L,U]\) satisfying
       \[
-      \Pr(\theta\in [L,U])\ge 1-\delta.
+      \mathbb{P}(\theta\in [L,U])\ge 1-\delta.
       \]
       In learning theory, the unknown quantity is often the true error \(L_D(h)\), and the observed quantity is the
       empirical error \(L_S(h)\).
@@ -2269,7 +2269,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     </p>
     <div class="proof">
       \[
-      \Pr\!\left(\left|\frac1m\sum_{i=1}^m Z_i-\mu\right|>\epsilon\right)
+      \mathbb{P}\!\left(\left|\frac1m\sum_{i=1}^m Z_i-\mu\right|>\epsilon\right)
       \le
       2\exp\!\left(\frac{-2m\epsilon^2}{(b-a)^2}\right).
       \]
@@ -2278,9 +2278,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       <strong>Proof.</strong> Let \(X_i = Z_i - \mathbb{E}[Z_i]\). Then \(\mathbb{E}[X_i]=0\), and since
       \(a\le Z_i\le b\), we also have \(X_i\in [a-\mu,b-\mu]\). For any \(\lambda>0\),
       \[
-      \Pr\!\left(\frac1m\sum_i X_i \ge \epsilon\right)
+      \mathbb{P}\!\left(\frac1m\sum_i X_i \ge \epsilon\right)
       =
-      \Pr\!\left(e^{\lambda \sum_i X_i} \ge e^{\lambda m\epsilon}\right)
+      \mathbb{P}\!\left(e^{\lambda \sum_i X_i} \ge e^{\lambda m\epsilon}\right)
       \le
       e^{-\lambda m\epsilon}\prod_i \mathbb{E}[e^{\lambda X_i}].
       \]
@@ -2290,7 +2290,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       Hence
       \[
-      \Pr\!\left(\frac1m\sum_i X_i \ge \epsilon\right)
+      \mathbb{P}\!\left(\frac1m\sum_i X_i \ge \epsilon\right)
       \le
       \exp\!\left(-\lambda m\epsilon + \frac{m\lambda^2(b-a)^2}{8}\right).
       \]
@@ -2300,19 +2300,19 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       giving
       \[
-      \Pr\!\left(\frac1m\sum_i X_i \ge \epsilon\right)
+      \mathbb{P}\!\left(\frac1m\sum_i X_i \ge \epsilon\right)
       \le
       \exp\!\left(\frac{-2m\epsilon^2}{(b-a)^2}\right).
       \]
       The same argument applied to \(-X_i\) yields
       \[
-      \Pr\!\left(\frac1m\sum_i X_i \le -\epsilon\right)
+      \mathbb{P}\!\left(\frac1m\sum_i X_i \le -\epsilon\right)
       \le
       \exp\!\left(\frac{-2m\epsilon^2}{(b-a)^2}\right).
       \]
       A union bound over the upper and lower tails proves
       \[
-      \Pr\!\left(\left|\frac1m\sum_i X_i\right|>\epsilon\right)
+      \mathbb{P}\!\left(\left|\frac1m\sum_i X_i\right|>\epsilon\right)
       \le
       2\exp\!\left(\frac{-2m\epsilon^2}{(b-a)^2}\right).
       \]
@@ -2674,7 +2674,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     </p>
     <div class="proof">
       \[
-      \Pr\!\left(
+      \mathbb{P}\!\left(
       \left|
       \frac{\|(1/\sqrt n)Wx\|_2^2}{\|x\|_2^2}-1
       \right|>\epsilon
@@ -2704,7 +2704,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       <strong>Proof.</strong> Let \(Q\) be a finite set of vectors. For each fixed nonzero \(u\in Q\), the
       single-vector concentration result says
       \[
-      \Pr\!\left(
+      \mathbb{P}\!\left(
       \left|
       \frac{\|Wu\|_2^2}{\|u\|_2^2}-1
       \right|>\epsilon
@@ -2713,7 +2713,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       Therefore, by the union bound,
       \[
-      \Pr\!\left(
+      \mathbb{P}\!\left(
       \exists u\in Q:
       \left|
       \frac{\|Wu\|_2^2}{\|u\|_2^2}-1
