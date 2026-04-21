@@ -498,8 +498,44 @@
 <div class="proof">
   <strong>Why \(2a(1-a) \ge \min(a,1-a)\)?</strong> For \(a \in [0, 1/2]\), \(\min(a,1-a) = a\). We need \(2a(1-a) \ge a\), i.e. \(2(1-a) \ge 1\), i.e. \(a \le 1/2\), which holds. For \(a \in [1/2, 1]\), \(\min(a,1-a) = 1-a\); we need \(2a(1-a) \ge 1-a\), i.e. \(2a \ge 1\), i.e. \(a \ge 1/2\), which holds. So minimizing weighted Gini at the children gives a proxy that upper-bounds the drop in training misclassification; minimizing Gini tends to reduce training error.
 </div>
+<div class="defn">
+  <strong>Jensen's inequality.</strong> If \(\Phi\) is concave and \(x_1,\dots,x_r\) are points with weights
+  \(\lambda_1,\dots,\lambda_r\ge 0\) satisfying \(\sum_{j=1}^r \lambda_j=1\), then
+  \[
+  \Phi\!\left(\sum_{j=1}^r \lambda_j x_j\right)\ge \sum_{j=1}^r \lambda_j \Phi(x_j).
+  \]
+  If \(\Phi\) is convex, the inequality reverses. In decision-tree proofs, the \(x_j\) are usually label fractions in
+  the child nodes, and the \(\lambda_j\) are the relative child sizes.
+</div>
+<div class="proof">
+  <strong>Why splitting cannot increase impurity for concave criteria.</strong> Let a parent node have positive-label
+  fraction \(p\). Suppose a split creates children \(1,\dots,r\), where child \(j\) receives fraction \(\lambda_j\)
+  of the samples and has positive-label fraction \(p_j\). Then
+  \[
+  p=\sum_{j=1}^r \lambda_j p_j,
+  \qquad
+  \sum_{j=1}^r \lambda_j=1.
+  \]
+  If impurity is measured by a concave function \(\Phi\), Jensen's inequality gives
+  \[
+  \Phi(p)=\Phi\!\left(\sum_{j=1}^r \lambda_j p_j\right)\ge \sum_{j=1}^r \lambda_j \Phi(p_j).
+  \]
+  Therefore the information gain
+  \[
+  \mathrm{Gain}
+  =
+  \Phi(p)-\sum_{j=1}^r \lambda_j \Phi(p_j)
+  \]
+  is always nonnegative. So refining a node can only preserve or decrease weighted impurity; it never makes the split
+  objectively worse under a concave impurity measure such as entropy or Gini.
+</div>
 <div class="intuition">
   <strong>Why use Gini?</strong> Smoothness makes optimization (e.g. gradient-based or numeric) easier. The fact that it’s an upper bound means that if we reduce Gini, we’re also reducing (or not increasing) the misclassification error we care about.
+</div>
+<div class="intuition">
+  This is the standard proof pattern when you want to show that splitting a node into more children should help us
+  learn. The parent label proportion is an average of the child proportions, and concavity says impurity at the
+  average is at least the average impurity after splitting.
 </div>
 
 <h3>3.3 Random Forests</h3>
@@ -595,6 +631,41 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
 <div class="example"><strong>Infinite concept class (p.38):</strong> Axis-parallel rectangles in \(\mathbb{R}^2\).</div>
 <p><strong>Tightest Fitting Rectangle (p.39):</strong> Algorithm: take the smallest axis-aligned rectangle containing all positive examples. “Bad event” strips: four regions each with probability mass \(\epsilon/4\).</p>
 <div class="proof"><strong>Axis-parallel bound (p.40):</strong> Probability we miss a given strip is \((1-\epsilon/4)^m\). By union bound, failure probability \(\le 4(1-\epsilon/4)^m \le 4 e^{-\epsilon m/4}\). Set \(4 e^{-\epsilon m/4} \le \delta\) to get <strong>\(m \ge \frac{4}{\epsilon}\ln\frac{4}{\delta}\)</strong>.</div>
+<div class="example">
+  <strong>Tightest-fitting learner for a disjunction of intervals on the number line.</strong> Let the target class be
+  unions of at most \(k\) disjoint intervals:
+  \[
+  h(x)=\mathbf{1}[x\in I_1\cup\cdots\cup I_k].
+  \]
+  The natural consistent learner is the one-dimensional analogue of the tightest rectangle learner: sort the positive
+  examples and output the smallest union of at most \(k\) intervals that contains all observed positives.
+</div>
+<div class="proof">
+  <strong>PAC bound for \(k\) intervals.</strong> Each true interval contributes two boundary events, one near its left
+  endpoint and one near its right endpoint, so there are at most \(2k\) critical boundary strips. Choose these strips
+  so that each has probability mass \(\epsilon/(2k)\). If the sample contains at least one positive example in every
+  such strip, then the uncovered part of the target has total probability at most \(\epsilon\).
+</div>
+<p>
+  The probability of missing one fixed strip is
+  \[
+  \left(1-\frac{\epsilon}{2k}\right)^m.
+  \]
+  By the union bound over the \(2k\) strips,
+  \[
+  \Pr[\text{failure}]
+  \le
+  2k\left(1-\frac{\epsilon}{2k}\right)^m
+  \le
+  2k\,e^{-\epsilon m/(2k)}.
+  \]
+  Therefore it suffices to choose
+  \[
+  m\ge \frac{2k}{\epsilon}\ln\frac{2k}{\delta}
+  \]
+  to guarantee error at most \(\epsilon\) with confidence at least \(1-\delta\). This is exactly the tightest-fitting
+  boundary-strip argument specialized to a disjunction of intervals on \(\mathbb{R}\).
+</p>
 <p><strong>Loss definitions (p.41):</strong> <strong>0/1 loss:</strong> \(\ell(h(x),y) = \mathbf{1}[h(x) \ne y]\). <strong>Empirical loss:</strong> \(\widehat{L}(h) = \frac{1}{m}\sum_i \ell(h(x_i),y_i)\). <strong>Population loss:</strong> \(L_D(h) = \mathbb{E}_{(x,y)\sim D}[\ell(h(x),y)]\).</p>
 
 <p><strong>Motivation.</strong> Move from mistake bounds on sequences to <em>generalization</em>: we draw a sample from a distribution \(D\) and want that, with high probability, our hypothesis has low error on \(D\) (not just on the sample).</p>
@@ -1248,6 +1319,30 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
     </div>
     <p>
+      Each symbol has a concrete role.
+      \(x\) is the input example.
+      \(o_{t,r}(x)\) is the output produced by neuron \(r\) in layer \(t\) when the network is fed the input \(x\).
+      The quantity \(w((v_{t,r},v_{t+1,j}))\) is the weight on the edge from neuron \(r\) in layer \(t\) to neuron
+      \(j\) in layer \(t+1\).
+      The sum
+      \[
+      a_{t+1,j}(x)
+      \]
+      is the <strong>pre-activation</strong> or <strong>affine score</strong> of neuron \(j\): it is the weighted
+      combination of all outputs feeding into that neuron before any nonlinearity is applied.
+      The output
+      \[
+      o_{t+1,j}(x)=\sigma(a_{t+1,j}(x))
+      \]
+      is the value sent forward to the next layer after applying the activation function \(\sigma\).
+    </p>
+    <div class="intuition">
+      Read the formula in two stages.
+      First, compute a weighted vote from the previous layer.
+      Second, pass that score through a nonlinearity.
+      Without the nonlinearity, the whole network would collapse to a single linear map.
+    </div>
+    <p>
       Thus the computation is layerwise: weighted sum first, activation second. Typical activations in the classical
       theory are the sign function, the threshold function, and the sigmoid.
     </p>
@@ -1259,6 +1354,13 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       The architecture is fixed; the learned parameters are the edge weights.
     </div>
+    <p>
+      This notation should be read carefully.
+      \(V\) specifies the neurons and their layer structure, \(E\) specifies which neurons are connected,
+      \(\sigma\) specifies the activation rule used at each neuron, and \(w:E\to\mathbb{R}\) assigns one real
+      parameter to each edge.
+      So \(H_{V,E,\sigma}\) is the set of all functions realizable by that fixed graph as the edge weights vary.
+    </p>
     <p>
       This is a definition rather than a theorem, but it has an immediate corollary worth stating explicitly:
       every claim about learnability, VC dimension, or optimization must be interpreted relative to a fixed
@@ -1572,6 +1674,25 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
 
     <h3>11.1 Weak Learnability</h3>
     <p>
+      <strong>What boosting is.</strong> Boosting is a procedure for converting many simple predictors, each only
+      slightly better than random guessing, into one strong predictor with very small training error and often much
+      better predictive performance.
+      The base learner is called repeatedly on reweighted versions of the same sample, and the final classifier is a
+      weighted vote of the hypotheses returned in those rounds.
+    </p>
+    <p>
+      In symbols, if the weak learner returns hypotheses \(h_1,\dots,h_T\), then boosting forms an aggregate score
+      \[
+      F_T(x)=\sum_{t=1}^T \alpha_t h_t(x)
+      \]
+      and predicts by the sign of that score:
+      \[
+      H_T(x)=\operatorname{sign}(F_T(x)).
+      \]
+      So boosting is not choosing the single best weak hypothesis.
+      It is building a new classifier from a weighted combination of many weak hypotheses.
+    </p>
+    <p>
       A weak learner is only required to do slightly better than chance. In binary classification this means producing
       a hypothesis with error at most \(1/2-\gamma\) for some fixed \(\gamma>0\).
     </p>
@@ -1582,6 +1703,18 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       L(h)\le \frac12-\gamma.
       \]
+    </div>
+    <p>
+      Here \(L(h)\) denotes the classification error of \(h\) under the distribution currently being considered.
+      In the realizable boosting setting this usually means either the weighted empirical error on the current sample
+      distribution \(D^{(t)}\), or the true distributional error in an abstract definition of weak learning.
+      The parameter \(\gamma\) is the <strong>edge</strong> of the weak learner over random guessing.
+      Random guessing has error \(1/2\); a weak learner improves this by at least \(\gamma\).
+    </p>
+    <div class="intuition">
+      “Weak” does not mean useless.
+      It means the learner only needs a uniform advantage over chance, no matter how small.
+      As long as that advantage is positive and repeatable, boosting can compound it across rounds.
     </div>
     <p>
       A useful corollary of the definition is conceptual rather than algebraic: if a weak learner can be made
@@ -1647,6 +1780,13 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
 
     <h3>11.4 AdaBoost: Update Rule and Interpretation</h3>
     <p>
+      AdaBoost is the canonical boosting algorithm.
+      It keeps a probability distribution \(D^{(t)}\) over the training examples.
+      Examples that were hard for earlier hypotheses receive larger weight in later rounds, forcing the next weak
+      learner to pay more attention to them.
+      After \(T\) rounds, AdaBoost outputs a weighted majority vote of the \(T\) weak hypotheses.
+    </p>
+    <p>
       AdaBoost maintains a distribution \(D^{(t)}\) over training examples. At round \(t\), the weak learner is
       trained relative to \(D^{(t)}\) and returns a hypothesis \(h_t\) with weighted error \(\epsilon_t\). The
       algorithm assigns vote
@@ -1663,6 +1803,22 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       h_S(x)=\operatorname{sign}\!\left(\sum_{t=1}^T w_t h_t(x)\right).
       \]
+    </div>
+    <p>
+      The terms in this update matter.
+      \(D_i^{(t)}\) is the weight of training point \(i\) at round \(t\).
+      The label \(y_i\in\{\pm 1\}\) is the true class, and \(h_t(x_i)\in\{\pm1\}\) is the round-\(t\) weak
+      learner's prediction on that point.
+      Therefore \(y_i h_t(x_i)=+1\) when the point is classified correctly and \(-1\) when it is misclassified.
+      The coefficient \(w_t\) is the vote strength assigned to \(h_t\): lower weighted error \(\epsilon_t\) produces
+      larger \(w_t\), so more accurate weak hypotheses count more in the final classifier.
+    </p>
+    <div class="intuition">
+      The exponential update is the mechanism that makes boosting adaptive.
+      Misclassified points are amplified, correctly classified points are damped, and the next weak learner is fit to
+      the resulting harder distribution.
+      The final classifier is therefore a sequence of corrections to earlier mistakes, not a repetition of the same
+      rule.
     </div>
     <p>
       If example \(i\) is misclassified, then \(y_i h_t(x_i)=-1\), so the exponential factor is \(e^{w_t}\) and its
