@@ -159,7 +159,7 @@
 <body>
   <main>
     <h1>CS 363H Final Exam Review</h1>
-    <p class="lede">Mistake-bounded learning, Winnow, weighted majority, decision trees, PAC learning, VC dimension, learning with noise, lower bounds for learning, compression and domain adaptation, perceptron, regression, optimization and loss, neural networks, boosting, confidence intervals, random projections, PCA, SVD, latent semantic indexing, matching loss, k-means, and PSD approximation. The emphasis is on mathematical structure: definitions, theorems, proofs, corollaries, examples, and algorithmic procedures.</p>
+    <p class="lede">Mistake-bounded learning, Winnow, weighted majority, decision trees, PAC learning, VC dimension, learning with noise, SQ learning, lower bounds for learning, compression and domain adaptation, perceptron, regression, optimization and loss, neural networks, boosting, confidence intervals, random projections, PCA, SVD, latent semantic indexing, matching loss, k-means, and PSD approximation. The emphasis is on mathematical structure: definitions, theorems, proofs, corollaries, examples, and algorithmic procedures.</p>
     <p class="lede">
       The presentation is intentionally closer to a comprehensive review sheet than to a textbook chapter: each
       subsection states the object, explains the motivation, records the key facts, and supplies enough derivation
@@ -1043,6 +1043,126 @@ So more complex classes (larger \(d\)) or smaller \(\epsilon\) both require more
       In the noisy setting, ERM succeeds for exactly the same structural reason as in the realizable setting: if
       empirical losses are uniformly close to true losses, then the empirical minimizer is close to the true minimizer.
       The only difference is that the true minimum risk is no longer \(0\).
+    </div>
+
+    <h3>6.5 SQ Learning</h3>
+    <p>
+      <strong>Statistical query (SQ) learning</strong> replaces direct access to labeled examples by access to
+      expectations of bounded predicates. Instead of asking for a random labeled example \((x,y)\), the learner chooses
+      a query function \(\phi:X\times\{\pm 1\}\to[-1,1]\) and a tolerance \(\tau&gt;0\), and receives a number
+      \(v\) satisfying
+      \[
+      \bigl|v-\mathbb E_{(x,y)\sim D}[\phi(x,y)]\bigr|\le \tau.
+      \]
+      So an SQ oracle returns an approximate correlation or approximate average, not a raw example.
+    </p>
+    <div class="defn">
+      <strong>SQ oracle.</strong>
+      Denote the oracle by \(\mathrm{STAT}_D(\tau)\). On input \(\phi\), it returns any value within \(\tau\) of
+      \(\mathbb E_D[\phi]\). An SQ learner is efficient if it asks only polynomially many queries and each query has
+      inverse-polynomial tolerance.
+    </div>
+    <p>
+      The motivation is robustness to noise. Empirical averages are stable under independent sampling, so if we can
+      estimate the expectation of every query accurately, then the learner can reason from aggregate statistics rather
+      than from possibly corrupted individual labels.
+    </p>
+    <div class="proof">
+      <strong>Why examples simulate SQ queries.</strong>
+      If we have i.i.d. samples \((x_1,y_1),\dots,(x_m,y_m)\), then for any fixed query \(\phi\) we can estimate
+      \(\mathbb E_D[\phi]\) by the empirical mean
+      \[
+      \widehat\mu=\frac{1}{m}\sum_{i=1}^m \phi(x_i,y_i).
+      \]
+      Since \(\phi\in[-1,1]\), Hoeffding's inequality gives
+      \[
+      \Pr\bigl[|\widehat\mu-\mathbb E_D[\phi]|\gt \tau\bigr]\le 2e^{-2m\tau^2}.
+      \]
+      Thus \(m=O(\tau^{-2}\log(1/\delta))\) samples suffice to answer one SQ up to tolerance \(\tau\) with failure
+      probability at most \(\delta\).
+    </div>
+    <p>
+      This means SQ learning is not stronger than ordinary PAC learning from examples: examples can emulate SQ access
+      by averaging. The important direction is the converse intuition: some algorithms can be designed using only such
+      averages, which makes them naturally noise-tolerant.
+    </p>
+    <div class="proof">
+      <strong>Reduction from PAC examples to SQ access.</strong>
+      Suppose an SQ algorithm asks \(q\) queries, each with tolerance at least \(\tau\). A PAC learner with ordinary
+      i.i.d. labeled examples can simulate each query by replacing \(\mathbb E_D[\phi]\) with the empirical mean of
+      \(\phi\) on a fresh sample. If each query is answered to accuracy at most \(\tau\), then the SQ algorithm
+      behaves exactly as if it had oracle access to \(\mathrm{STAT}_D(\tau)\). By Hoeffding plus a union bound over
+      the \(q\) queries, it is enough to use
+      \[
+      m=O\!\left(\frac{1}{\tau^2}\log\frac{q}{\delta}\right)
+      \]
+      samples per query to make all answers simultaneously valid with probability at least \(1-\delta\). Therefore an
+      efficient SQ learner can be converted into an efficient PAC learner.
+    </div>
+    <div class="proof">
+      <strong>Reduction from PAC learning to approximate error estimation.</strong>
+      In the opposite direction, an SQ oracle can estimate the error of any fixed hypothesis \(h\) by querying
+      \[
+      \phi_h(x,y)=\mathbf 1[h(x)\neq y].
+      \]
+      Then
+      \[
+      \mathbb E_D[\phi_h]=L_D(h).
+      \]
+      So SQ access lets us evaluate the risk of any candidate hypothesis up to additive tolerance \(\tau\). If a PAC
+      procedure can be implemented using only approximate estimates of such expectations, then it can be turned into an
+      SQ learner. This is why many classical algorithms that depend only on correlations, moments, or estimated losses
+      admit SQ versions.
+    </div>
+    <div class="proof">
+      <strong>Random classification noise only rescales correlations.</strong>
+      Suppose the observed label is \(\widetilde y = b\,y\), where \(b\in\{\pm 1\}\) is independent of \(x,y\) and
+      \(\Pr[b=-1]=\eta\lt 1/2\). For any query of the form \(\phi(x,y)=y\,g(x)\) with \(g(x)\in[-1,1]\),
+      \[
+      \mathbb E[\widetilde y\,g(x)]
+      =
+      \mathbb E[b]\,\mathbb E[y\,g(x)]
+      =
+      (1-2\eta)\mathbb E[y\,g(x)].
+      \]
+      So under random label noise, the true correlation is shrunk by the factor \(1-2\eta\), but its sign is
+      preserved as long as \(\eta\lt 1/2\).
+    </div>
+    <p>
+      That identity is the basic reason SQ algorithms tolerate random classification noise: if the learner only needs
+      approximate correlations, then noise does not destroy the signal; it only attenuates it by a known scalar factor.
+    </p>
+    <div class="example">
+      <strong>Example: estimating a coordinate correlation.</strong>
+      For Boolean features \(x\in\{\pm 1\}^d\), take
+      \[
+      \phi_j(x,y)=y x_j.
+      \]
+      Then \(\mathbb E[yx_j]\) measures how correlated coordinate \(j\) is with the label. A simple SQ-style learner
+      can inspect these correlations and choose a feature whose correlation magnitude is noticeably nonzero. Under
+      random classification noise at rate \(\eta\), the observed statistic becomes
+      \[
+      \mathbb E[\widetilde y x_j]=(1-2\eta)\mathbb E[yx_j].
+      \]
+      So the ranking of strong coordinates is unchanged, although the margin shrinks.
+    </div>
+    <div class="intuition">
+      SQ learning sits conceptually between PAC learning and noise-tolerant learning. PAC gives the sample framework,
+      agnostic/noisy learning explains why perfect consistency may be impossible, and SQ learning shows that many
+      useful algorithms can be driven entirely by approximate expectations rather than by exact labels on individual
+      examples.
+    </div>
+    <div class="intuition">
+      For exam purposes, the key relationship is:
+      \[
+      \text{examples } \Longrightarrow \text{ simulate SQ queries by averaging,}
+      \]
+      while
+      \[
+      \text{SQ access } \Longrightarrow \text{ estimate errors/correlations without inspecting single labels directly.}
+      \]
+      So SQ is best viewed as a restricted information model inside PAC, designed to expose which learning procedures
+      rely only on stable statistics.
     </div>
 
 <h2 id="part12">Part VII: Lower Bounds for Learning</h2>
@@ -4344,9 +4464,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       <strong>Mini-example.</strong> If the vocabulary is \((\text{apple},\text{computer},\text{economy})\) and the
       documents are
       \[
-      d_1:\ \text{``apple computer''},
+      d_1:\ \texttt{apple computer},
       \qquad
-      d_2:\ \text{``economy economy''},
+      d_2:\ \texttt{economy economy},
       \]
       then
       \[
@@ -4452,7 +4572,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       latent space even without exact lexical overlap.
     </p>
     <div class="example">
-      <strong>Example.</strong> A query about “cars” may retrieve a document emphasizing “automobiles” if the two
+      <strong>Example.</strong> A query about "cars" may retrieve a document emphasizing "automobiles" if the two
       terms appear in similar patterns across the document collection. Truncated SVD places them near one another in
       latent space.
     </div>
