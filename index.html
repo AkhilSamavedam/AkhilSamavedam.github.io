@@ -1133,6 +1133,86 @@ So more complex classes (larger \(d\)) or smaller \(\epsilon\) both require more
       approximate correlations, then noise does not destroy the signal; it only attenuates it by a known scalar factor.
     </p>
     <div class="example">
+      <strong>Example: learning a halfspace by SQ estimates of perceptron updates.</strong>
+      Suppose the target is a halfspace \(h^\star(x)=\mathrm{sign}(w^\star\cdot x)\) over inputs with
+      \(\|x\|_2\le 1\). The ordinary perceptron update on a mistaken example is
+      \[
+      w \leftarrow w + yx.
+      \]
+      An SQ analogue does not ask for a single mislabeled point. Instead, relative to the current weight vector
+      \(w\), define the set of points the current classifier gets wrong:
+      \[
+      M_w=\{(x,y): y(w\cdot x)\le 0\}.
+      \]
+      Then query the conditional average update direction
+      \[
+      \mu_w=\mathbb E[yx\mid (x,y)\in M_w].
+      \]
+      If the current classifier still makes noticeable error, this vector points in a direction positively correlated
+      with \(w^\star\), just as the average of perceptron mistake updates does. So an SQ-style algorithm can use an
+      approximate version of \(\mu_w\) and update by
+      \[
+      w \leftarrow w + \widehat{\mu}_w.
+      \]
+      This is the same geometric idea as perceptron: move toward the average signed feature vector of examples your
+      current separator classifies incorrectly. The difference is that SQ replaces one noisy update \(yx\) by a stable
+      average direction.
+    </div>
+    <div class="proof">
+      <strong>Why \(\tau=0\) is not allowed.</strong>
+      If \(\tau=0\), then the oracle must return the exact value of \(\mathbb E_D[\phi]\) for every bounded query
+      \(\phi\). That is much stronger than what finite samples can provide: by Hoeffding, estimating an expectation to
+      additive error \(\tau\) needs on the order of \(1/\tau^2\) samples, which blows up as \(\tau\to 0\). So exact
+      SQ answers generally require infinitely precise distributional information, not realistic sample access.
+    </div>
+    <div class="proof">
+      <strong>Choosing the largest useful tolerance \(\tau\).</strong>
+      In SQ learning, larger \(\tau\) is better computationally because simulating one query needs only
+      \(O(\tau^{-2}\log(1/\delta))\) samples. So the right strategy is to make \(\tau\) as large as possible while
+      still preserving the information the learner needs.
+    </div>
+    <p>
+      Suppose the learner relies on the sign of a correlation
+      \[
+      \mu=\mathbb E[y\,g(x)],
+      \]
+      and assume \(|\mu|\ge \gamma\) in the clean distribution for some margin or advantage parameter \(\gamma&gt;0\).
+      Under random classification noise at rate \(\eta\lt 1/2\), the observed correlation becomes
+      \[
+      \mu_{\mathrm{noisy}}=(1-2\eta)\mu,
+      \]
+      so its magnitude is at least \((1-2\eta)\gamma\).
+      If the SQ oracle answers with additive error at most \(\tau\), then to guarantee that the sign is still correct
+      we need
+      \[
+      \tau < |\mu_{\mathrm{noisy}}|.
+      \]
+      A standard safe choice is to require
+      \[
+      \tau \le \frac{(1-2\eta)\gamma}{2},
+      \]
+      because then the oracle error is at most half the available signal, so the returned value must have the same sign
+      as \(\mu_{\mathrm{noisy}}\).
+    </p>
+    <p>
+      This is the “optimal” tolerance up to constants: if \(\tau\) is much smaller, the algorithm still works but
+      wastes samples; if \(\tau\) is larger than a constant multiple of \((1-2\eta)\gamma\), the noise in the query
+      answer can overwhelm the correlation and the learner can no longer reliably tell which direction is correct.
+      Therefore the largest order of tolerance compatible with correct learning is
+      \[
+      \tau = \Theta((1-2\eta)\gamma),
+      \]
+      with the convenient explicit choice
+      \[
+      \tau=\frac{(1-2\eta)\gamma}{2}.
+      \]
+    </p>
+    <p>
+      Conceptually, the SQ model is meant to capture algorithms that depend on <em>robust statistics</em>. Requiring
+      exact expectations would make the model unrealistically strong and would break the reduction from PAC examples to
+      SQ simulation, because finite data can only approximate expectations, never determine them exactly in general.
+    </p>
+    <div class="example">
       <strong>Example: estimating a coordinate correlation.</strong>
       For Boolean features \(x\in\{\pm 1\}^d\), take
       \[
@@ -3735,26 +3815,31 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
         </li>
         <li>Form the centered data matrix
           \[
-          X=[\widetilde x_1\ \widetilde x_2\ \cdots\ \widetilde x_m]\in\mathbb{R}^{d\times m}.
+          X=\begin{pmatrix}
+          \widetilde x_1^\top\\
+          \widetilde x_2^\top\\
+          \vdots\\
+          \widetilde x_m^\top
+          \end{pmatrix}\in\mathbb{R}^{m\times d}.
           \]
         </li>
         <li>Form the scatter matrix
           \[
-          A=XX^\top=\sum_{i=1}^m \widetilde x_i \widetilde x_i^\top.
+          A=X^\top X=\sum_{i=1}^m \widetilde x_i \widetilde x_i^\top.
           \]
           Up to the factor \(1/m\), this is the empirical covariance matrix.
         </li>
         <li>Find the top \(k\) eigenvectors \(v_1,\dots,v_k\) of \(A\). These are the principal directions.</li>
         <li>To compress a point \(x\), first center it and then project:
           \[
-          z = U^\top (x-\bar x),
+          z = V^\top (x-\bar x),
           \qquad
-          U=[v_1\ \cdots\ v_k].
+          V=[v_1\ \cdots\ v_k].
           \]
         </li>
         <li>To reconstruct from the compressed coordinates \(z\), use
           \[
-          \widehat x = \bar x + Uz.
+          \widehat x = \bar x + Vz.
           \]
         </li>
       </ol>
@@ -3763,31 +3848,31 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       <strong>Equivalent reconstruction formula.</strong>
       Since
       \[
-      z=U^\top(x-\bar x),
+      z=V^\top(x-\bar x),
       \]
       substituting into the decoder gives
       \[
       \widehat x
       =
-      \bar x + UU^\top(x-\bar x).
+      \bar x + VV^\top(x-\bar x).
       \]
       Thus PCA reconstruction is exactly orthogonal projection of the centered vector onto the principal subspace,
       followed by adding the mean back.
     </div>
     <div class="proof">
       <strong>How to reconstruct an entire data matrix.</strong>
-      Let \(X\in\mathbb{R}^{d\times m}\) be the centered data matrix and let
+      Let \(X\in\mathbb{R}^{m\times d}\) be the centered data matrix and let
       \[
-      U_k=[v_1\ \cdots\ v_k].
+      V_k=[v_1\ \cdots\ v_k].
       \]
       Then the rank-\(k\) PCA reconstruction of the centered data is
       \[
-      \widehat X = U_kU_k^\top X.
+      \widehat X = XV_kV_k^\top.
       \]
-      If \(X_{\mathrm{raw}}\) is the original uncentered data matrix and \(\bar x\mathbf{1}^\top\) is the mean matrix,
+      If \(X_{\mathrm{raw}}\) is the original uncentered data matrix and \(\mathbf{1}\bar x^\top\) is the mean matrix,
       then
       \[
-      \widehat X_{\mathrm{raw}} = \bar x\mathbf{1}^\top + U_kU_k^\top(X_{\mathrm{raw}}-\bar x\mathbf{1}^\top).
+      \widehat X_{\mathrm{raw}} = \mathbf{1}\bar x^\top + (X_{\mathrm{raw}}-\mathbf{1}\bar x^\top)V_kV_k^\top.
       \]
     </div>
     <div class="example">
@@ -3814,7 +3899,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       If the question asks only for the first principal component, then after centering you compute the top
       eigenvector \(v_1\) of
       \[
-      A=XX^\top.
+      A=X^\top X.
       \]
       The scalar coordinate of a point \(x\) on that component is
       \[
@@ -3825,19 +3910,169 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \bar x + v_1 v_1^\top (x-\bar x).
       \]
     </div>
+    <div class="example">
+      <strong>Worked PCA example.</strong>
+      Take three points in \(\mathbb{R}^2\):
+      \[
+      x_1=\begin{pmatrix}2\\ 0\end{pmatrix},
+      \qquad
+      x_2=\begin{pmatrix}0\\ 2\end{pmatrix},
+      \qquad
+      x_3=\begin{pmatrix}4\\ 4\end{pmatrix}.
+      \]
+      We will do rank-1 PCA.
+      <ol>
+        <li>Compute the mean:
+          \[
+          \bar x=\frac{x_1+x_2+x_3}{3}
+          =
+          \begin{pmatrix}2\\ 2\end{pmatrix}.
+          \]
+        </li>
+        <li>Center the data:
+          \[
+          \widetilde x_1=\begin{pmatrix}0\\ -2\end{pmatrix},
+          \qquad
+          \widetilde x_2=\begin{pmatrix}-2\\ 0\end{pmatrix},
+          \qquad
+          \widetilde x_3=\begin{pmatrix}2\\ 2\end{pmatrix}.
+          \]
+        </li>
+        <li>Form the centered data matrix and scatter matrix:
+          \[
+          X=
+          \begin{pmatrix}
+          0 & -2\\
+          -2 & 0\\
+          2 & 2
+          \end{pmatrix},
+          \qquad
+          A=X^\top X.
+          \]
+          \[
+          A=\sum_{i=1}^3 \widetilde x_i\widetilde x_i^\top
+          =
+          \begin{pmatrix}0 & 0\\ 0 & 4\end{pmatrix}
+          +
+          \begin{pmatrix}4 & 0\\ 0 & 0\end{pmatrix}
+          +
+          \begin{pmatrix}4 & 4\\ 4 & 4\end{pmatrix}
+          =
+          \begin{pmatrix}8 & 4\\ 4 & 8\end{pmatrix}.
+          \]
+        </li>
+        <li>Find the eigenvalues and eigenvectors of \(A\). First compute
+          \[
+          \det(A-\lambda I)
+          =
+          \det\begin{pmatrix}8-\lambda & 4\\ 4 & 8-\lambda\end{pmatrix}
+          =
+          (8-\lambda)^2-16
+          =
+          \lambda^2-16\lambda+48.
+          \]
+          So the eigenvalues are \(12\) and \(4\). For \(\lambda=12\),
+          \[
+          (A-12I)v
+          =
+          \begin{pmatrix}-4 & 4\\ 4 & -4\end{pmatrix}
+          \begin{pmatrix}a\\ b\end{pmatrix}
+          =
+          \begin{pmatrix}0\\ 0\end{pmatrix},
+          \]
+          which gives \(-4a+4b=0\), so \(a=b\). Thus one eigenvector is \((1,1)^\top\), and the
+          first principal direction is
+          \[
+          v_1=\frac{1}{\sqrt{2}}\begin{pmatrix}1\\ 1\end{pmatrix}.
+          \]
+          For \(\lambda=4\),
+          \[
+          (A-4I)v
+          =
+          \begin{pmatrix}4 & 4\\ 4 & 4\end{pmatrix}
+          \begin{pmatrix}a\\ b\end{pmatrix}
+          =
+          \begin{pmatrix}0\\ 0\end{pmatrix},
+          \]
+          which gives \(4a+4b=0\), so \(a=-b\). Thus one eigenvector is \((1,-1)^\top\), and the second
+          principal direction is
+          \[
+          v_2=\frac{1}{\sqrt{2}}\begin{pmatrix}1\\ -1\end{pmatrix}.
+          \]
+        </li>
+        <li>Compress \(x_1\) using only the first principal component:
+          \[
+          z_1=v_1^\top(x_1-\bar x)
+          =
+          \frac{1}{\sqrt{2}}(1,1)\cdot(0,-2)
+          =
+          -\sqrt{2}.
+          \]
+        </li>
+        <li>Reconstruct from this 1-dimensional code:
+          \[
+          \widehat x_1=\bar x+z_1v_1
+          =
+          \begin{pmatrix}2\\ 2\end{pmatrix}
+          -
+          \sqrt{2}\cdot
+          \frac{1}{\sqrt{2}}
+          \begin{pmatrix}1\\ 1\end{pmatrix}
+          =
+          \begin{pmatrix}1\\ 1\end{pmatrix}.
+          \]
+        </li>
+        <li>Compress \(x_1\) using both principal components:
+          \[
+          z=
+          \begin{pmatrix}
+          v_1^\top(x_1-\bar x)\\[2mm]
+          v_2^\top(x_1-\bar x)
+          \end{pmatrix}
+          =
+          \begin{pmatrix}
+          -\sqrt{2}\\[2mm]
+          \sqrt{2}
+          \end{pmatrix}.
+          \]
+          This is the 2-dimensional PCA encoding of \(x_1\) in the orthonormal basis \(\{v_1,v_2\}\).
+        </li>
+        <li>Reconstruct from both principal components:
+          \[
+          \widehat x_1
+          =
+          \bar x + z_1v_1 + z_2v_2
+          =
+          \begin{pmatrix}2\\ 2\end{pmatrix}
+          -
+          \begin{pmatrix}1\\ 1\end{pmatrix}
+          +
+          \begin{pmatrix}1\\ -1\end{pmatrix}
+          =
+          \begin{pmatrix}2\\ 0\end{pmatrix}
+          =x_1.
+          \]
+          Keeping both components gives exact reconstruction, because in \(\mathbb{R}^2\) the two principal
+          directions form a complete orthonormal basis.
+        </li>
+      </ol>
+      So rank-1 PCA keeps only the direction spanned by \((1,1)\), and after centering it replaces \(x_1=(2,0)\)
+      by its projection \((1,1)\). Using both principal components keeps all coordinates in the centered orthonormal
+      basis, so no information is lost.
+    </div>
     <div class="proof">
       <strong>What the reconstruction error is.</strong>
       The residual after rank-\(k\) PCA is
       \[
-      r = x-\widehat x = (I-U_kU_k^\top)(x-\bar x).
+      r = x-\widehat x = (I-V_kV_k^\top)(x-\bar x).
       \]
       This is exactly the component orthogonal to the principal subspace. Hence
       \[
       \|x-\widehat x\|_2^2
       =
-      \|(I-U_kU_k^\top)(x-\bar x)\|_2^2.
+      \|(I-V_kV_k^\top)(x-\bar x)\|_2^2.
       \]
-      Over the entire sample, PCA chooses \(U_k\) to make the sum of these squared residuals as small as possible.
+      Over the entire sample, PCA chooses \(V_k\) to make the sum of these squared residuals as small as possible.
     </div>
     <div class="intuition">
       PCA does permit reconstruction, but only after deciding which \(k\)-dimensional subspace to keep. Unlike random
@@ -3845,10 +4080,10 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       in that same basis.
     </div>
     <p>
-      If \(d\gg m\), diagonalizing the \(d\times d\) matrix \(XX^\top\) is expensive. Instead diagonalize the smaller
+      If \(d\gg m\), diagonalizing the \(d\times d\) matrix \(X^\top X\) is expensive. Instead diagonalize the smaller
       Gram matrix
       \[
-      G=X^\top X\in\mathbb{R}^{m\times m},
+      G=XX^\top\in\mathbb{R}^{m\times m},
       \]
       then recover the principal directions from its eigenvectors. This is the computational shortcut underlying
       kernel PCA as well.
@@ -3857,28 +4092,28 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       <strong>Gram-matrix trick for the first principal component.</strong>
       Let \(\alpha_1\in\mathbb{R}^m\) be a unit eigenvector of
       \[
-      G=X^\top X
+      G=XX^\top
       \]
       with largest eigenvalue \(\lambda_1\). Define
       \[
-      v_1=\frac{1}{\sqrt{\lambda_1}}X\alpha_1.
+      v_1=\frac{1}{\sqrt{\lambda_1}}X^\top\alpha_1.
       \]
       Then \(v_1\) is the first principal direction in \(\mathbb{R}^d\).
     </div>
     <div class="proof">
       <strong>Proof.</strong> Since
       \[
-      G\alpha_1 = X^\top X \alpha_1 = \lambda_1 \alpha_1,
+      G\alpha_1 = XX^\top \alpha_1 = \lambda_1 \alpha_1,
       \]
-      multiplying by \(X\) gives
+      multiplying by \(X^\top\) gives
       \[
-      XX^\top (X\alpha_1)=\lambda_1 (X\alpha_1).
+      X^\top X (X^\top\alpha_1)=\lambda_1 (X^\top\alpha_1).
       \]
-      Therefore \(X\alpha_1\) is an eigenvector of \(XX^\top\) with eigenvalue \(\lambda_1\). Moreover,
+      Therefore \(X^\top\alpha_1\) is an eigenvector of \(X^\top X\) with eigenvalue \(\lambda_1\). Moreover,
       \[
-      \|X\alpha_1\|_2^2
+      \|X^\top\alpha_1\|_2^2
       =
-      \alpha_1^\top X^\top X \alpha_1
+      \alpha_1^\top XX^\top \alpha_1
       =
       \alpha_1^\top G\alpha_1
       =
@@ -3888,20 +4123,20 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       since \(\|\alpha_1\|_2=1\). Hence dividing by \(\sqrt{\lambda_1}\) normalizes the vector, so
       \[
-      v_1=\lambda_1^{-1/2}X\alpha_1
+      v_1=\lambda_1^{-1/2}X^\top\alpha_1
       \]
-      is a unit eigenvector of \(XX^\top\) for the largest eigenvalue. That is exactly the first principal component.
+      is a unit eigenvector of \(X^\top X\) for the largest eigenvalue. That is exactly the first principal direction.
     </div>
     <div class="example">
       <strong>How to use the Gram trick on an exam.</strong>
       If the ambient dimension \(d\) is huge but the sample size \(m\) is small:
       <ol>
-        <li>Center the columns of \(X\).</li>
-        <li>Compute the \(m\times m\) Gram matrix \(G=X^\top X\).</li>
+        <li>Center the rows of \(X\), or equivalently subtract the empirical mean from every sample.</li>
+        <li>Compute the \(m\times m\) Gram matrix \(G=XX^\top\).</li>
         <li>Find its top eigenpair \((\lambda_1,\alpha_1)\).</li>
         <li>Recover the first principal direction by
           \[
-          v_1=\lambda_1^{-1/2}X\alpha_1.
+          v_1=\lambda_1^{-1/2}X^\top\alpha_1.
           \]
         </li>
         <li>Project any centered point \(x-\bar x\) by computing \(v_1^\top(x-\bar x)\).</li>
@@ -3915,6 +4150,46 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     </div>
     <div class="intuition">
       Forgetting to center is one of the standard PCA mistakes. It can completely change the leading direction.
+    </div>
+
+    <h3>15.6 PCA and SVD: Which Singular Vectors Are the Principal Components?</h3>
+    <p>
+      Let \(X\in\mathbb{R}^{m\times d}\) be the <em>centered</em> data matrix used in these notes, with one sample per
+      row. Write its singular value decomposition as
+      \[
+      X=U\Sigma V^\top.
+      \]
+      Then
+      \[
+      X^\top X = V\Sigma^2 V^\top,
+      \qquad
+      XX^\top = U\Sigma^2 U^\top.
+      \]
+      Since PCA diagonalizes \(X^\top X\), the principal directions are the eigenvectors of \(X^\top X\), which are the
+      columns of \(V\).
+    </p>
+    <div class="proof">
+      <strong>Main identification.</strong>
+      For the centered data convention \(X\in\mathbb{R}^{m\times d}\):
+      <ol>
+        <li>The <strong>right singular vectors</strong> \(v_1,v_2,\dots\) are the principal directions in feature space.</li>
+        <li>The eigenvalues of the PCA scatter matrix \(X^\top X\) are \(\sigma_1^2,\sigma_2^2,\dots\).</li>
+        <li>The principal-component score matrix is
+          \[
+          XV = U\Sigma.
+          \]
+          Its \(j\)-th column gives the scores of all samples on the \(j\)-th principal component.
+        </li>
+      </ol>
+    </div>
+    <p>
+      This is why PCA and SVD are often presented as the same computation in different language: SVD gives the
+      orthonormal directions \(v_i\), and PCA keeps the top few of them.
+    </p>
+    <div class="intuition">
+      In these notes, samples are rows. So the feature covariance/scatter matrix is \(X^\top X\), the principal
+      directions are the <strong>right</strong> singular vectors, and the left singular vectors describe orthonormal
+      directions in sample space rather than feature space.
     </div>
 
     <h2 id="part5">Part XVI: Random Projections</h2>
