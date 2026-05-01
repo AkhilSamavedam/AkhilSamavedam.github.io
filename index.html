@@ -96,26 +96,30 @@
       background: rgba(58, 58, 78, 0.5);
       border-left: 4px solid var(--accent);
       padding: 14px 16px;
-      margin: 1em 0;
+      margin: 1em 0 1em 0.8rem;
+      border-radius: 6px;
     }
     .intuition {
       background: rgba(78, 58, 78, 0.35);
       border-left: 4px solid #bb9af7;
       padding: 14px 16px;
-      margin: 1em 0;
+      margin: 1em 0 1em 0.8rem;
+      border-radius: 6px;
       font-style: italic;
     }
     .defn {
       background: rgba(58, 78, 58, 0.3);
       border-left: 4px solid #9ece6a;
       padding: 14px 16px;
-      margin: 1em 0;
+      margin: 1em 0 1em 0.8rem;
+      border-radius: 6px;
     }
     .example {
       background: rgba(78, 68, 58, 0.35);
       border-left: 4px solid #e0af68;
       padding: 14px 16px;
-      margin: 1em 0;
+      margin: 1em 0 1em 0.8rem;
+      border-radius: 6px;
     }
     .formula {
       margin: 0.8em 0;
@@ -155,13 +159,13 @@
 <body>
   <main>
     <h1>CS 363H Final Exam Review</h1>
-    <p class="lede">Mistake-bounded learning, Winnow, weighted majority, decision trees, PAC learning, VC dimension, compression and domain adaptation, perceptron, regression, optimization and loss, neural networks, boosting, confidence intervals, random projections, PCA, SVD, latent semantic indexing, matching loss, k-means, and PSD approximation. The emphasis is on mathematical structure: definitions, theorems, proofs, corollaries, examples, and algorithmic procedures.</p>
+    <p class="lede">Mistake-bounded learning, Winnow, weighted majority, decision trees, PAC learning, VC dimension, learning with noise, lower bounds for learning, compression and domain adaptation, perceptron, regression, optimization and loss, neural networks, boosting, confidence intervals, random projections, PCA, SVD, latent semantic indexing, matching loss, k-means, and PSD approximation. The emphasis is on mathematical structure: definitions, theorems, proofs, corollaries, examples, and algorithmic procedures.</p>
     <p class="lede">
       The presentation is intentionally closer to a comprehensive review sheet than to a textbook chapter: each
       subsection states the object, explains the motivation, records the key facts, and supplies enough derivation
       detail to reconstruct the argument during a proof-based exam.
     </p>
-    <div class="toc">
+        <div class="toc">
       <strong>Contents</strong>
       <ol>
         <li><a href="#sec1">Part I: Mistake-Bounded Learning</a></li>
@@ -169,20 +173,22 @@
         <li><a href="#sec6">Part III: Decision Trees</a></li>
         <li><a href="#sec5">Part IV: PAC Learning</a></li>
         <li><a href="#sec5b">Part V: VC Dimension &amp; Radon</a></li>
-        <li><a href="#sec55">Part VI: Compression, Oracles, Domain Adaptation, TDS</a></li>
-        <li><a href="#sec4">Part VII: Perceptron</a></li>
-        <li><a href="#sec2reg">Part VIII: Regression</a></li>
-        <li><a href="#sec7">Part IX: Optimization &amp; Loss</a></li>
-        <li><a href="#part1">Part X: Neural Networks</a></li>
-        <li><a href="#part2">Part XI: Boosting</a></li>
-        <li><a href="#part3">Part XII: Confidence Intervals and Concentration</a></li>
-        <li><a href="#part4">Part XIII: Principal Component Analysis</a></li>
-        <li><a href="#part5">Part XIV: Random Projections</a></li>
-        <li><a href="#part6">Part XV: Singular Value Decomposition</a></li>
-        <li><a href="#part7">Part XVI: Latent Semantic Indexing</a></li>
-        <li><a href="#part8">Part XVII: Matching Loss and Logistic Regression</a></li>
-        <li><a href="#part9">Part XVIII: k-Means Clustering</a></li>
-        <li><a href="#part10">Part XIX: PSD Approximation</a></li>
+        <li><a href="#part11">Part VI: Learning With Noise</a></li>
+        <li><a href="#part12">Part VII: Lower Bounds for Learning</a></li>
+        <li><a href="#sec55">Part VIII: Compression, Oracles, Domain Adaptation, TDS</a></li>
+        <li><a href="#sec4">Part IX: Perceptron</a></li>
+        <li><a href="#sec2reg">Part X: Regression</a></li>
+        <li><a href="#sec7">Part XI: Optimization &amp; Loss</a></li>
+        <li><a href="#part1">Part XII: Neural Networks</a></li>
+        <li><a href="#part2">Part XIII: Boosting</a></li>
+        <li><a href="#part3">Part XIV: Confidence Intervals and Concentration</a></li>
+        <li><a href="#part4">Part XV: Principal Component Analysis</a></li>
+        <li><a href="#part5">Part XVI: Random Projections</a></li>
+        <li><a href="#part6">Part XVII: Singular Value Decomposition</a></li>
+        <li><a href="#part7">Part XVIII: Latent Semantic Indexing</a></li>
+        <li><a href="#part8">Part XIX: Matching Loss and Logistic Regression</a></li>
+        <li><a href="#part9">Part XX: k-Means Clustering</a></li>
+        <li><a href="#part10">Part XXI: PSD Approximation</a></li>
       </ol>
     </div>
 
@@ -362,7 +368,7 @@
 <p>For <strong>monotone disjunctions</strong> over \(d\) variables (the same class as in Part I), the trivial <strong>elimination</strong> algorithm already achieves mistake bound <strong>\(O(d)\)</strong> (or \(O(2d)\) for general disjunctions with negations)—independent of how many literals \(k\) are in the target. So we don’t need Winnow to get a finite bound. Winnow’s advantage is <strong>attribute efficiency</strong>: if the target disjunction has only \(k\) relevant variables (e.g. \(f^* = x_{11} \lor x_2 \lor x_{17}\) with \(k=3\) and \(d\) large), Winnow achieves mistake bound <strong>\(O(k \log d)\)</strong>, which can be much smaller than \(d\) when \(k \ll d\). So the comparison is: elimination \(O(d)\) vs Winnow \(O(k \log d)\); when the target is sparse, Winnow makes fewer mistakes.</p>
 <p><strong>Winnow</strong> maintains a weight \(w_i \ge 0\) for each of the \(d\) variables. Initially \(w_i = 1\) for all \(i\), and we use a <strong>threshold</strong> \(\theta = d\). We predict 1 if and only if \(\sum_{i=1}^d w_i x_i \ge \theta\). So we are comparing a weighted sum of the current instance to the threshold.</p>
 <ul class="steps">
-  <li><strong>Type A (promotion, false negative):</strong> We predicted 0 but the true label is 1. So \(\sum_i w_i x_i < \theta\). We double \(w_i\) for every \(i\) with \(x_i = 1\). This increases the weighted sum for similar examples in the future so we are more likely to predict 1.</li>
+  <li><strong>Type A (promotion, false negative):</strong> We predicted 0 but the true label is 1. So \(\sum_i w_i x_i \lt \theta\). We double \(w_i\) for every \(i\) with \(x_i = 1\). This increases the weighted sum for similar examples in the future so we are more likely to predict 1.</li>
   <li><strong>Type B (demotion, false positive):</strong> We predicted 1 but the true label is 0. So \(\sum_i w_i x_i \ge \theta\). We set \(w_i := 0\) for every \(i\) with \(x_i = 1\). So we zero out the weights of all active variables, reducing the sum sharply.</li>
 </ul>
 <div class="example">
@@ -371,7 +377,7 @@
 <div class="proof">
   <strong>Bound \(2k \log_2 d\).</strong> Let \(W = \sum_i w_i\) (the potential). <br><br>
   <em>Promotions:</em> Only variables in the true disjunction ever get doubled (others get zeroed when they appear in a negative example). Each such variable has weight at most \(\theta = d\) before we would predict 1. So each of the \(k\) relevant literals can be doubled at most \(\log_2 d\) times. Hence number of Type A mistakes \(\le k \log_2 d\).<br><br>
-  <em>Demotions:</em> On a Type B mistake we had \(\sum_i w_i x_i \ge \theta = d\), and we set to 0 all \(w_i\) with \(x_i = 1\). So the total weight \(W\) drops by at least \(d\). On a Type A mistake we double some \(w_i\) with \(x_i = 1\); before the update we had \(\sum_i w_i x_i < d\), so the increase in \(W\) is less than \(d\). So demotions decrease \(W\) by \(\ge d\) and promotions increase \(W\) by \(< d\). The total weight starts at \(d\) and never goes negative, so the number of demotions is at most the number of promotions (up to a constant). So total mistakes \(\le 2 \cdot k \log_2 d = O(k \log d)\).
+  <em>Demotions:</em> On a Type B mistake we had \(\sum_i w_i x_i \ge \theta = d\), and we set to 0 all \(w_i\) with \(x_i = 1\). So the total weight \(W\) drops by at least \(d\). On a Type A mistake we double some \(w_i\) with \(x_i = 1\); before the update we had \(\sum_i w_i x_i \lt d\), so the increase in \(W\) is less than \(d\). So demotions decrease \(W\) by \(\ge d\) and promotions increase \(W\) by \(\lt d\). The total weight starts at \(d\) and never goes negative, so the number of demotions is at most the number of promotions (up to a constant). So total mistakes \(\le 2 \cdot k \log_2 d = O(k \log d)\).
 </div>
 
 <h3>2.2 Weighted Majority (Pages 14–16)</h3>
@@ -388,7 +394,7 @@
   <strong>Why "follow the best expert so far" can fail badly.</strong> Consider the deterministic strategy that always follows the expert with the fewest mistakes so far, breaking ties in favor of the smallest index. This strategy can be forced to make a mistake on each of \(k-1\) rounds even though one expert is perfect on all of those rounds.
 </div>
 <p>
-  Let the experts be \(E_1,\dots,E_k\). For rounds \(r=1,2,\dots,k-1\), arrange the predictions so that expert \(E_r\) is wrong on round \(r\), while every expert \(E_j\) with \(j>r\) is correct on round \(r\). Choose the true label each round so that this pattern holds.
+  Let the experts be \(E_1,\dots,E_k\). For rounds \(r=1,2,\dots,k-1\), arrange the predictions so that expert \(E_r\) is wrong on round \(r\), while every expert \(E_j\) with \(j\gt r\) is correct on round \(r\). Choose the true label each round so that this pattern holds.
 </p>
 <p>
   Before round \(1\), all experts are tied at \(0\) mistakes, so the strategy follows \(E_1\), which is wrong. Before round \(2\), expert \(E_1\) has one mistake, while \(E_2,\dots,E_k\) still have zero, so the strategy follows \(E_2\), which is wrong. Continuing inductively, before round \(r\), experts \(E_1,\dots,E_{r-1}\) each have one mistake, while \(E_r,\dots,E_k\) still have zero, so tie-breaking picks \(E_r\), which we arranged to be wrong on round \(r\).
@@ -426,7 +432,7 @@
   \]
   Use the inequality (for \(x \in (0, 1/2)\)): \(-x^2 - x \le \ln(1-x) \le -x\).<br>
   • For \(x = \epsilon\): \(\ln(1-\epsilon) \ge -\epsilon^2 - \epsilon\), so \(m\ln(1-\epsilon) \ge m(-\epsilon^2 - \epsilon)\).<br>
-  • For \(x = \epsilon \ell_t\) (with \(\epsilon \ell_t \le \epsilon < 1/2\)): \(\ln(1 - \epsilon \ell_t) \le -\epsilon \ell_t\), so \(\sum_t \ln(1 - \epsilon \ell_t) \le -\epsilon \sum_t \ell_t = -\epsilon L\), where \(L = \sum_{t=1}^{T} \ell_t\) is the total expected loss.<br>
+  • For \(x = \epsilon \ell_t\) (with \(\epsilon \ell_t \le \epsilon \lt 1/2\)): \(\ln(1 - \epsilon \ell_t) \le -\epsilon \ell_t\), so \(\sum_t \ln(1 - \epsilon \ell_t) \le -\epsilon \sum_t \ell_t = -\epsilon L\), where \(L = \sum_{t=1}^{T} \ell_t\) is the total expected loss.<br>
   So
   \[
   m(-\epsilon^2 - \epsilon) \le m\ln(1-\epsilon) \le \ln K + \sum_t \ln(1 - \epsilon \ell_t) \le \ln K - \epsilon L.
@@ -482,7 +488,7 @@
   \frac{5}{8}\cdot 2\cdot \frac{1}{5}\cdot \frac{4}{5}+\frac{3}{8}\cdot 0
   =0.2.
   \]
-  So the gain is \(0.5-0.2=0.3\). If our stopping rule says “stop when gain \(<0.1\),” then we should definitely split on this feature.
+  So the gain is \(0.5-0.2=0.3\). If our stopping rule says “stop when gain \(\lt 0.1\),” then we should definitely split on this feature.
 </div>
 <p>
   Continuing recursively, if one child is already pure, we stop there. On the impure child we repeat the same calculation with the remaining candidate features, again choosing the split with smallest weighted impurity. This is exactly the bookkeeping used in hand-worked decision-tree exercises.
@@ -549,8 +555,8 @@
 \[
   \mathrm{Rank}(T) =
   \begin{cases}
-    r_1 + 1 & \text{if } r_1 = r_2,\\
-    \max(r_1, r_2) & \text{otherwise.}
+    r_1 + 1 &amp; \text{if } r_1 = r_2,\\
+    \max(r_1, r_2) &amp; \text{otherwise.}
   \end{cases}
 \]
 So we “add 1” only when both subtrees have the same rank (a kind of symmetry); otherwise we just take the larger rank. Intuitively, rank counts how many times we can go down to two subtrees of equal depth.</p>
@@ -564,7 +570,7 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
       S = S_L + S_R + 1 \;\ge\; 2^{k-1} + 2^{k-1} + 1 = 2^k + 1,
     \]
     so \(k \le \log_2 S\).</li>
-    <li><strong>Case 2: \(r_L \ne r_R\).</strong> Then \(\mathrm{Rank}(T) = \max(r_L, r_R)\). By the induction hypothesis, \(r_L \le \log_2 S_L\) and \(r_R \le \log_2 S_R\). Since \(S_L, S_R < S\) and \(S = S_L + S_R + 1\), each of \(\log_2 S_L\) and \(\log_2 S_R\) is at most \(\log_2 S\). Thus \(\mathrm{Rank}(T) = \max(r_L, r_R) \le \log_2 S\).</li>
+    <li><strong>Case 2: \(r_L \ne r_R\).</strong> Then \(\mathrm{Rank}(T) = \max(r_L, r_R)\). By the induction hypothesis, \(r_L \le \log_2 S_L\) and \(r_R \le \log_2 S_R\). Since \(S_L, S_R \lt S\) and \(S = S_L + S_R + 1\), each of \(\log_2 S_L\) and \(\log_2 S_R\) is at most \(\log_2 S\). Thus \(\mathrm{Rank}(T) = \max(r_L, r_R) \le \log_2 S\).</li>
   </ul>
   In both cases, \(\mathrm{Rank}(T) \le \log_2 S\), completing the induction.
 </div>
@@ -584,12 +590,12 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
 <p><strong>Assumptions (p.29):</strong> Fixed distribution \(D\); i.i.d. draws; ground truth \(c\).</p>
 <div class="example"><strong>Statistical evaluation (p.30):</strong> Classifier \(h\) with true error \(\ge 0.3\). Over 20 random draws, the probability that \(h\) remains consistent with all 20 is at most \((1 - 0.3)^{20} = (0.7)^{20} \approx 2 \times 10^{-5}\). So we can “catch” a bad model with high probability.</div>
 <p><strong>Domain and sample (p.31):</strong> \(X = \{0,1\}^n\); coordinates; labels. PAC workflow: Domain \(X\) \(\rightarrow\) Coordinates \(\rightarrow\) Label \(\rightarrow\) PAC Algorithm \(\rightarrow\) Hypothesis \(h\).</p>
-<p><strong>Hold-out and validation (p.32):</strong> <strong>Hold-out methodology:</strong> Reserve a subset of the data (not used for training); evaluate the model on this set to estimate true error. The probability that an inaccurate hypothesis (error \(> \epsilon\)) remains consistent with \(t\) hold-out samples is \(\le (1-\epsilon)^t\).</p>
+<p><strong>Hold-out and validation (p.32):</strong> <strong>Hold-out methodology:</strong> Reserve a subset of the data (not used for training); evaluate the model on this set to estimate true error. The probability that an inaccurate hypothesis (error \(\gt \epsilon\)) remains consistent with \(t\) hold-out samples is \(\le (1-\epsilon)^t\).</p>
 <p><strong>Input parameters (p.33):</strong> Error \(\epsilon\), Confidence \(\delta\). <strong>Example:</strong> 95% confidence, 0.03 error ⇒ \(m \ge \frac{1}{\epsilon}\ln\frac{|\mathcal{C}|}{\delta}\).</p>
 <p><strong>PAC learner requirements (p.34):</strong> Polynomial sample and time complexity. <strong>Consistency model:</strong> Output any \(h \in \mathcal{C}\) consistent with the sample.</p>
 <div class="proof"><strong>Consistency / Union bound (p.35–37):</strong> Probability mass of “bad” hypotheses consistent with \(m\) samples \(\le K(1-\epsilon)^m\). Set \(K e^{-\epsilon m} \le \delta\) ⇒ \(m \ge \frac{1}{\epsilon} \ln\frac{|\mathcal{C}|}{\delta}\).</div>
 <div class="proof">
-  <strong>Naive PAC bound via “challenges”.</strong> Fix a finite concept class \(\mathcal{C}\) and a target function \(c \in \mathcal{C}\). Let a hypothesis \(h \in \mathcal{C}\) be called <em>bad</em> if its true error is larger than \(\epsilon\): \(\mathrm{err}_D(h) = \mathbb{P}_{x \sim D}[h(x) \ne c(x)] > \epsilon\). Think of each training example as a <strong>challenge</strong> to every bad hypothesis: on that example, there is at least an \(\epsilon\) chance (under the draw from \(D\)) that the bad hypothesis disagrees with the target and so is “caught.” The probability that a fixed bad hypothesis <em>escapes</em> a single challenge (agrees with \(c\) on that example) is at most \(1-\epsilon\). If we draw \(m\) i.i.d. challenges, the probability that this same bad hypothesis passes all of them (is consistent with all \(m\) samples) is at most \((1-\epsilon)^m\). Now there may be many bad hypotheses. In the worst case, every hypothesis in \(\mathcal{C}\) is bad; there are \(|\mathcal{C}|\) of them. By the union bound, the probability that <em>some</em> bad hypothesis is consistent with all \(m\) samples is at most \(|\mathcal{C}|(1-\epsilon)^m\). Using \(1-x \le e^{-x}\), we get \((1-\epsilon)^m \le e^{-\epsilon m}\), so this failure probability is \(\le |\mathcal{C}| e^{-\epsilon m}\). To make this \(\le \delta\), we require
+  <strong>Naive PAC bound via “challenges”.</strong> Fix a finite concept class \(\mathcal{C}\) and a target function \(c \in \mathcal{C}\). Let a hypothesis \(h \in \mathcal{C}\) be called <em>bad</em> if its true error is larger than \(\epsilon\): \(\mathrm{err}_D(h) = \mathbb{P}_{x \sim D}[h(x) \ne c(x)] \gt \epsilon\). Think of each training example as a <strong>challenge</strong> to every bad hypothesis: on that example, there is at least an \(\epsilon\) chance (under the draw from \(D\)) that the bad hypothesis disagrees with the target and so is “caught.” The probability that a fixed bad hypothesis <em>escapes</em> a single challenge (agrees with \(c\) on that example) is at most \(1-\epsilon\). If we draw \(m\) i.i.d. challenges, the probability that this same bad hypothesis passes all of them (is consistent with all \(m\) samples) is at most \((1-\epsilon)^m\). Now there may be many bad hypotheses. In the worst case, every hypothesis in \(\mathcal{C}\) is bad; there are \(|\mathcal{C}|\) of them. By the union bound, the probability that <em>some</em> bad hypothesis is consistent with all \(m\) samples is at most \(|\mathcal{C}|(1-\epsilon)^m\). Using \(1-x \le e^{-x}\), we get \((1-\epsilon)^m \le e^{-\epsilon m}\), so this failure probability is \(\le |\mathcal{C}| e^{-\epsilon m}\). To make this \(\le \delta\), we require
   \[
     |\mathcal{C}| e^{-\epsilon m} \le \delta
     \quad\Longrightarrow\quad
@@ -680,41 +686,7 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
   <strong>Why “probably” and “approximately”?</strong> “Probably” = with confidence \(1-\delta\); we allow a small chance of failure. “Approximately” = we allow error up to \(\epsilon\); we don’t demand perfect accuracy.
 </div>
 
-<div class="proof">
-  <strong>Agnostic PAC learnability implies realizable PAC learnability.</strong> If a hypothesis class \(H\) is agnostically PAC learnable under \(0/1\) loss, then it is also realizably PAC learnable.
-</div>
-<p>
-  <strong>Proof.</strong> Assume data are realizable by some target \(f\in H\). Then the joint distribution \(D\) over \((x,y)\) satisfies \(y=f(x)\) almost surely, so
-  \[
-  \min_{h\in H}\mathrm{err}_D(h)=0.
-  \]
-  If an agnostic PAC learner outputs, with probability at least \(1-\delta\), a hypothesis \(h\) satisfying
-  \[
-  \mathrm{err}_D(h)\le \min_{h'\in H}\mathrm{err}_D(h')+\epsilon,
-  \]
-  then in the realizable case this reduces to \(\mathrm{err}_D(h)\le \epsilon\). Hence the agnostic guarantee immediately implies the realizable PAC guarantee.
-</p>
-<div class="proof">
-  <strong>Bayes-optimal classifier for \(0/1\) loss.</strong> For finite label space \(Y\), define
-  \[
-  h^\star(x)\in \arg\max_{\hat y\in Y}\mathbb{P}[Y=\hat y\mid X=x].
-  \]
-  Then for every classifier \(f:X\to Y\),
-  \[
-  \mathbb{P}[h^\star(X)\neq Y]\le \mathbb{P}[f(X)\neq Y].
-  \]
-</div>
-<p>
-  <strong>Proof.</strong> Fix \(x\). The classifier \(h^\star\) chooses a label maximizing \(\mathbb{P}[Y=\hat y\mid X=x]\), equivalently minimizing the conditional \(0/1\) loss
-  \[
-  \mathbb{P}[Y\neq \hat y\mid X=x]=1-\mathbb{P}[Y=\hat y\mid X=x].
-  \]
-  Therefore
-  \[
-  \mathbb{P}[Y\neq h^\star(x)\mid X=x]\le \mathbb{P}[Y\neq f(x)\mid X=x]
-  \]
-  for every \(x\). Taking expectation over \(X\) and using the law of total expectation yields the claim.
-</p>
+<p><strong>Bridge to noise and unrealizability.</strong> The noisy and agnostic viewpoint is developed in Part VI. In the realizable case, those guarantees reduce to the standard PAC guarantees because the optimal in-class error becomes zero.</p>
 
 <h3>4.2 Cross-Validation</h3>
 <p>Split data into \(k\) folds. For each fold, train on the other \(k-1\) folds and evaluate on that fold. Average the errors. Used to estimate true error and tune hyperparameters (e.g. \(\lambda\)).</p>
@@ -736,7 +708,7 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
   A mistake-bound algorithm is stronger than a PAC learner in the realizable setting: once we can force only finitely many online mistakes on every consistent sequence, we can turn that online procedure into a distributional learner.
 </p>
 <div class="proof">
-  <strong>Key block argument.</strong> Fix any hypothesis \(h\) with true error \(\mathrm{err}_D(h) > \epsilon\). Then the probability that \(h\) correctly labels \(k\) fresh i.i.d. examples is at most
+  <strong>Key block argument.</strong> Fix any hypothesis \(h\) with true error \(\mathrm{err}_D(h) \gt \epsilon\). Then the probability that \(h\) correctly labels \(k\) fresh i.i.d. examples is at most
   \[
   (1-\epsilon)^k \le e^{-\epsilon k}.
   \]
@@ -771,19 +743,7 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
   and runtime polynomial in the runtime of the online learner and in \(1/\epsilon,1/\delta\).
 </p>
 
-<div class="proof">
-  <strong>No-free-lunch nonlearnability for the class of all binary functions on an infinite domain.</strong> Let \(X\) be infinite and let
-  \[
-  H=\{h: X\to\{\pm1\}\}
-  \]
-  be the class of all binary classifiers on \(X\). Then \(H\) is not realizably PAC learnable.
-</div>
-<p>
-  <strong>Proof idea.</strong> Suppose toward contradiction that \(H\) were realizably PAC learnable. Pick constants \(\epsilon<1/8\) and \(\delta<1/7\). Then there would be a learner \(A\) and sample size \(m=m(\epsilon,\delta)\) such that for every realizable distribution \(D\), after seeing \(m\) examples, \(A\) outputs a hypothesis with error at most \(\epsilon\) with probability at least \(1-\delta\).
-</p>
-<p>
-  But the No-Free-Lunch theorem says that for any learner \(A\) and any \(m<|X|/2\), there exists a realizable distribution \(D\) and target \(f\in H\) such that, with probability at least \(1/7\), the output hypothesis has error at least \(1/8\). Since \(X\) is infinite, every finite \(m\) satisfies \(m<|X|/2\). This contradicts the assumed PAC guarantee. Therefore \(H\) cannot be realizably PAC learnable.
-</p>
+<p><strong>Remark.</strong> The systematic lower-bound arguments, including No-Free-Lunch and VC-based sample-complexity lower bounds, are collected later in Part VII so they appear in one place rather than being repeated inside the PAC section.</p>
 
 <h2 id="sec5b">Part V: VC Dimension and Radon (Pages 42–54)</h2>
 
@@ -807,7 +767,7 @@ So more complex classes (larger \(d\)) or smaller \(\epsilon\) both require more
 </div>
 <p><strong>Examples:</strong> Intervals on \(\mathbb{R}\): VC dim 2. Axis-aligned rectangles: VC dim 4. Halfspaces in \(\mathbb{R}^n\): VC dim \(n+1\). <strong>(p.42–43)</strong> Fundamental Theorem of Statistical Learning; shattering. Set of 9 unlabeled points and labeling variation over \(\mathcal{C}\); VC-dim \(k\) = largest shattered set size. <strong>(p.44–46)</strong> Intervals (VC=2), rectangles (VC=4), triangles in the plane, 8 points and shattered triangles. <strong>(p.47–48)</strong> Convex sets and convex combinations; convex hull \(\mathrm{conv}(S)\). Halfspaces, linear thresholds, Perceptron model. <strong>(p.50–53)</strong> Halfspaces are convex separators (\(z = \lambda x + (1-\lambda)y\)). Weight vector \(w\) and bias \(b\). PAC for halfspaces in \(d\) dimensions. Solving linear inequalities in polynomial time. <strong>Agnostic learning:</strong> no assumption target is in \(\mathcal{C}\).</p>
 <div class="proof">
-  <strong>Fundamental theorem (proof).</strong> If \(h\) has true error \(> \epsilon\), then the probability that \(h\) is consistent with one random example is \(\le 1-\epsilon\). So the probability that \(h\) is consistent with \(m\) i.i.d. examples is \(\le (1-\epsilon)^m\). Using the approximation <strong>\(1+x \le e^x\)</strong> (for all \(x\)), \((1-\epsilon)^m \le e^{-\epsilon m}\). By the union bound over all \(|\mathcal{C}|\) hypotheses, the probability that some bad hypothesis (error \(> \epsilon\)) is consistent with the sample is \(\le |\mathcal{C}| e^{-\epsilon m}\). Set this \(\le \delta\): \(|\mathcal{C}| e^{-\epsilon m} \le \delta\) \(\Rightarrow\) \(m \ge \frac{1}{\epsilon} \ln\frac{|\mathcal{C}|}{\delta}\).
+  <strong>Fundamental theorem (proof).</strong> If \(h\) has true error \(\gt \epsilon\), then the probability that \(h\) is consistent with one random example is \(\le 1-\epsilon\). So the probability that \(h\) is consistent with \(m\) i.i.d. examples is \(\le (1-\epsilon)^m\). Using the approximation <strong>\(1+x \le e^x\)</strong> (for all \(x\)), \((1-\epsilon)^m \le e^{-\epsilon m}\). By the union bound over all \(|\mathcal{C}|\) hypotheses, the probability that some bad hypothesis (error \(\gt \epsilon\)) is consistent with the sample is \(\le |\mathcal{C}| e^{-\epsilon m}\). Set this \(\le \delta\): \(|\mathcal{C}| e^{-\epsilon m} \le \delta\) \(\Rightarrow\) \(m \ge \frac{1}{\epsilon} \ln\frac{|\mathcal{C}|}{\delta}\).
 </div>
 
 <h3>5.2 Axis-Parallel Rectangles (PAC Example)</h3>
@@ -851,7 +811,7 @@ So more complex classes (larger \(d\)) or smaller \(\epsilon\) both require more
 <h3>5.4 Radon’s Theorem and VC Dimension of Halfspaces</h3>
 <p><strong>Claim:</strong> The VC dimension of halfspaces in \(\mathbb{R}^d\) is \(d+1\).</p>
 <div class="proof">
-  <strong>Radon’s Theorem.</strong> Any \(d+2\) points in \(\mathbb{R}^d\) are <em>affinely dependent</em>: there exist coefficients \(\alpha_i\) (not all zero) with \(\sum_i \alpha_i x_i = 0\) and \(\sum_i \alpha_i = 0\) (linear dependency: \((x_i,1)\) are dependent in \(\mathbb{R}^{d+1}\)). Partition indices into \(I^+ = \{i : \alpha_i \ge 0\}\) and \(I^- = \{i : \alpha_i < 0\}\). Then \(\sum_{i \in I^+} \alpha_i x_i = \sum_{j \in I^-} |\alpha_j| x_j\). Divide by \(A = \sum_{i \in I^+} \alpha_i = \sum_{j \in I^-} |\alpha_j|\); we get \(p = \sum_{i \in I^+} (\alpha_i/A) x_i = \sum_{j \in I^-} (|\alpha_j|/A) x_j\). So \(p\) is in both \(\mathrm{conv}(\{x_i : i \in I^+\})\) and \(\mathrm{conv}(\{x_j : j \in I^-\})\).<br><br>
+  <strong>Radon’s Theorem.</strong> Any \(d+2\) points in \(\mathbb{R}^d\) are <em>affinely dependent</em>: there exist coefficients \(\alpha_i\) (not all zero) with \(\sum_i \alpha_i x_i = 0\) and \(\sum_i \alpha_i = 0\) (linear dependency: \((x_i,1)\) are dependent in \(\mathbb{R}^{d+1}\)). Partition indices into \(I^+ = \{i : \alpha_i \ge 0\}\) and \(I^- = \{i : \alpha_i \lt 0\}\). Then \(\sum_{i \in I^+} \alpha_i x_i = \sum_{j \in I^-} |\alpha_j| x_j\). Divide by \(A = \sum_{i \in I^+} \alpha_i = \sum_{j \in I^-} |\alpha_j|\); we get \(p = \sum_{i \in I^+} (\alpha_i/A) x_i = \sum_{j \in I^-} (|\alpha_j|/A) x_j\). So \(p\) is in both \(\mathrm{conv}(\{x_i : i \in I^+\})\) and \(\mathrm{conv}(\{x_j : j \in I^-\})\).<br><br>
   <strong>Implication.</strong> If we label \(I^+\) as \(+1\) and \(I^-\) as \(-1\), any halfspace that labels all of \(I^+\) positive and all of \(I^-\) negative would have to label \(p\) (in both convex hulls) as both—impossible. So no set of \(d+2\) points is shattered. One can show \(d+1\) points can be shattered. So VC-dim of halfspaces in \(\mathbb{R}^d\) is \(d+1\).
 </div>
 
@@ -908,12 +868,318 @@ So more complex classes (larger \(d\)) or smaller \(\epsilon\) both require more
 <p><strong>Logistic regression:</strong> Model \(\mathbb{P}[y=1 \mid x] = \sigma(w \cdot x) = \frac{1}{1 + e^{-w \cdot x}}\). Maximizing log-likelihood is equivalent to minimizing \(-\sum_i \ln(1 + e^{-y_i w^T x_i})\). This objective is convex; optimize with gradient descent.</p>
 
 <!-- ========== Part VI: Pages 55–61 (Compression, Oracles, Domain Adaptation, TDS) ========== -->
-<h2 id="sec55">Part VI: Compression, Oracles, Domain Adaptation, TDS (Pages 55–61)</h2>
+<h2 id="part11">Part VI: Learning With Noise</h2>
+
+    <h3>6.1 The Agnostic Viewpoint</h3>
+    <p>
+      In the realizable PAC model we assume that some hypothesis in the class labels every example correctly.
+      Learning with noise is the systematic way to relax that assumption.
+      Instead of supposing that there exists \(h^\star\in H\) with zero error, we allow the data distribution
+      \(D\) over \(X\times \{\pm 1\}\) to be arbitrary.
+      The best we can ask for is a hypothesis whose risk is close to the minimum achievable inside \(H\).
+    </p>
+    <div class="defn">
+      <strong>Agnostic objective.</strong>
+      For a hypothesis class \(H\), the risk of \(h\in H\) is
+      \[
+      L_D(h)=\mathbb E_{(x,y)\sim D}\big[\mathbf 1[h(x)\neq y]\big].
+      \]
+      The agnostic goal is to output \(h\) such that
+      \[
+      L_D(h)\le \inf_{g\in H} L_D(g)+\epsilon
+      \]
+      with probability at least \(1-\delta\).
+    </div>
+    <p>
+      The quantity
+      \[
+      \inf_{g\in H}L_D(g)
+      \]
+      is the <strong>approximation floor</strong> imposed by noise and model misspecification.
+      When labels are noisy or the true labeling rule is not in \(H\), this term is positive.
+      Agnostic learning therefore separates two sources of error: the irreducible error inside \(H\), and the
+      additional \(\epsilon\) caused by finite samples.
+    </p>
+    <div class="intuition">
+      Noise converts the learning problem from “find a perfectly consistent classifier” to “compete with the best
+      classifier in the hypothesis class.” This is the right formulation whenever labels may be corrupted or the model
+      class is only approximate.
+    </div>
+
+    <h3>6.2 Classification Noise and Random Label Flips</h3>
+    <p>
+      The cleanest noise model is <strong>random classification noise</strong>.
+      Assume there is an underlying target function \(f:X\to\{\pm 1\}\), but the observed label is flipped
+      independently with probability \(\eta\), where \(0\le \eta \le 1/2\).
+      Thus the observed label \(\widetilde y\) satisfies
+      \[
+      \widetilde y=
+      \begin{cases}
+      f(x), &amp; \text{with probability }1-\eta,\\
+      -f(x), &amp; \text{with probability }\eta.
+      \end{cases}
+      \]
+    </p>
+    <div class="proof">
+      <strong>Noise identity.</strong>
+      For every classifier \(h\),
+      \[
+      L_\eta(h)=\eta+(1-2\eta)L_f(h),
+      \]
+      where \(L_f(h)=\mathbb P[h(x)\neq f(x)]\) is the error with respect to the clean target and \(L_\eta(h)\) is the
+      observed noisy-label error.
+    </div>
+    <p>
+      <strong>Proof.</strong>
+      Let \(A=\{x:h(x)\neq f(x)\}\) and \(A^c=\{x:h(x)=f(x)\}\).
+      If \(x\in A^c\), then \(h\) is correct relative to the clean label and becomes wrong only if the label flips,
+      which happens with probability \(\eta\).
+      If \(x\in A\), then \(h\) is wrong relative to the clean label and becomes correct only if the label flips, so
+      its observed error probability is \(1-\eta\).
+      Therefore
+      \[
+      L_\eta(h)=\eta\,\mathbb P(A^c)+(1-\eta)\,\mathbb P(A).
+      \]
+      Since \(\mathbb P(A)=L_f(h)\) and \(\mathbb P(A^c)=1-L_f(h)\),
+      \[
+      L_\eta(h)=\eta(1-L_f(h))+(1-\eta)L_f(h)
+      =\eta+(1-2\eta)L_f(h).
+      \]
+      This proves the identity.
+    </p>
+    <p>
+      <strong>Corollary.</strong>
+      If \(\eta\lt 1/2\), then minimizing noisy risk is equivalent to minimizing clean risk, because
+      \(1-2\eta\gt 0\).
+      Hence the optimal classifier does not change under class-independent random label noise below rate \(1/2\).
+      At \(\eta=1/2\), labels are pure coin flips and learning becomes impossible.
+    </p>
+    <div class="example">
+      <strong>Example.</strong>
+      If the clean error of \(h\) is \(L_f(h)=0.1\) and the flip rate is \(\eta=0.2\), then
+      \[
+      L_\eta(h)=0.2+(1-0.4)\cdot 0.1=0.26.
+      \]
+      A perfectly clean classifier still incurs noisy error \(0.2\), because even correct labels are flipped
+      \(20\%\) of the time.
+    </div>
+
+    <h3>6.3 Bayes Optimal Prediction Under Noise</h3>
+    <p>
+      For a general noisy distribution \(D\), define the conditional class probability
+      \[
+      \eta(x)=\mathbb P[y=1\mid x].
+      \]
+      The classifier that minimizes the \(0/1\) risk over all measurable rules is the <strong>Bayes classifier</strong>
+      \[
+      h_B(x)=
+      \begin{cases}
+      1, &amp; \eta(x)\ge 1/2,\\
+      -1, &amp; \eta(x)\lt 1/2.
+      \end{cases}
+      \]
+    </p>
+    <div class="proof">
+      <strong>Why thresholding at \(1/2\) is optimal.</strong>
+      Fix \(x\).
+      If we predict \(1\), the conditional probability of error is
+      \[
+      \mathbb P[y=-1\mid x]=1-\eta(x).
+      \]
+      If we predict \(-1\), the conditional probability of error is
+      \[
+      \mathbb P[y=1\mid x]=\eta(x).
+      \]
+      Therefore the smaller conditional error is
+      \[
+      \min\{\eta(x),1-\eta(x)\},
+      \]
+      achieved by predicting the more likely label.
+      Integrating over \(x\) shows that the Bayes rule minimizes the overall risk.
+    </div>
+    <p>
+      This gives the conceptual meaning of learning with noise.
+      Labels are no longer deterministic functions of \(x\); instead, the best possible prediction is the more likely
+      label at each \(x\), and the unavoidable Bayes risk is the average of the minority-label probabilities.
+    </p>
+
+    <h3>6.4 ERM and Agnostic Learning Guarantees</h3>
+    <p>
+      Once noise is present, empirical risk minimization is no longer trying to drive the training error to zero.
+      It is trying to approximate
+      \[
+      \arg\min_{h\in H} L_D(h)
+      \]
+      by minimizing the empirical loss
+      \[
+      \widehat L_S(h)=\frac1m\sum_{i=1}^m \mathbf 1[h(x_i)\neq y_i].
+      \]
+    </p>
+    <div class="proof">
+      <strong>Uniform convergence implication.</strong>
+      If
+      \[
+      \sup_{h\in H}\big|L_D(h)-\widehat L_S(h)\big|\le \frac{\epsilon}{2},
+      \]
+      then every empirical risk minimizer \(\widehat h\in \arg\min_{h\in H}\widehat L_S(h)\) satisfies
+      \[
+      L_D(\widehat h)\le \inf_{g\in H} L_D(g)+\epsilon.
+      \]
+    </div>
+    <p>
+      <strong>Proof.</strong>
+      Let \(h^\star\in \arg\min_{h\in H}L_D(h)\).
+      Then
+      \[
+      L_D(\widehat h)\le \widehat L_S(\widehat h)+\frac{\epsilon}{2}
+      \le \widehat L_S(h^\star)+\frac{\epsilon}{2}
+      \le L_D(h^\star)+\epsilon
+      = \inf_{g\in H}L_D(g)+\epsilon.
+      \]
+      The first and third inequalities use uniform convergence, and the middle inequality uses the ERM property of
+      \(\widehat h\).
+    </p>
+    <div class="intuition">
+      In the noisy setting, ERM succeeds for exactly the same structural reason as in the realizable setting: if
+      empirical losses are uniformly close to true losses, then the empirical minimizer is close to the true minimizer.
+      The only difference is that the true minimum risk is no longer \(0\).
+    </div>
+
+<h2 id="part12">Part VII: Lower Bounds for Learning</h2>
+
+    <h3>7.1 The No-Free-Lunch Principle</h3>
+    <p>
+      Lower bounds explain why structural assumptions are necessary.
+      If we allow the hypothesis class to be all functions on a large domain, then no learning algorithm can be
+      uniformly successful from a small sample.
+    </p>
+    <div class="proof">
+      <strong>No-Free-Lunch theorem.</strong>
+      Let \(X\) be a finite domain and let \(A\) be any learning algorithm that receives a sample of size \(m\).
+      Assume \(2m\lt |X|\).
+      Then there exists a labeling function \(f:X\to\{0,1\}\) and a distribution \(D\) on \(X\) such that, with
+      constant probability over the sample, the output hypothesis of \(A\) has constant error.
+    </div>
+    <p>
+      <strong>Proof.</strong>
+      Choose a set \(C\subseteq X\) of size \(2m\), and let \(D\) be the uniform distribution on \(C\).
+      Let the sample points be drawn from \(D\).
+      Since the sample has size \(m\), there are always at least \(m\) points of \(C\) that are unseen if the sample
+      points are distinct, and in general a constant fraction of \(C\) remains unseen with nontrivial probability.
+      Denote by \(U\subseteq C\) the set of unseen points.
+    </p>
+    <p>
+      Fix the realized sample \(S\).
+      The algorithm only observes the labels on the sampled points, so on the unseen set \(U\) it cannot distinguish
+      between two target labelings that agree on \(S\) and disagree on all of \(U\).
+      Let \(f_0,f_1\) be two such labelings.
+      Since \(A\) outputs the same hypothesis after seeing \(S\) under either target, the average of its errors
+      against \(f_0\) and \(f_1\) on the unseen set is exactly \(1/2\).
+      Therefore for at least one of the two labelings,
+      \[
+      \mathrm{err}_D(A(S))\ge \frac{|U|}{2|C|}.
+      \]
+    </p>
+    <p>
+      It remains to note that with constant probability the sample leaves a constant fraction of \(C\) unseen.
+      On that event,
+      \[
+      \mathrm{err}_D(A(S))\ge \frac{|U|}{2|C|},
+      \]
+      which is bounded below by a positive universal constant. A standard occupancy calculation yields such an event
+      with positive constant probability, proving the theorem.
+    </p>
+    <div class="intuition">
+      The proof is pure information limitation.
+      If the learner has never seen a large block of the domain, then on that block there are multiple target
+      functions compatible with the sample.
+      No algorithm can guess correctly on all such completions.
+    </div>
+
+    <h3>7.2 VC Dimension as a Lower-Bound Mechanism</h3>
+    <p>
+      The No-Free-Lunch theorem becomes a class-dependent lower bound once we restrict attention to a hypothesis class
+      \(H\) with finite VC dimension.
+      If \(H\) shatters a set of size \(d\), then on that shattered set the class behaves like the set of all binary
+      labelings.
+    </p>
+    <div class="proof">
+      <strong>VC lower bound from shattering.</strong>
+      Let \(H\) be a binary hypothesis class with \(\mathrm{VCdim}(H)=d\).
+      If \(m\lt d/2\), then for every learning algorithm \(A\) there exists a realizable learning problem over \(H\) on
+      which \(A\) has constant error with constant probability.
+    </div>
+    <p>
+      <strong>Proof.</strong>
+      Since \(\mathrm{VCdim}(H)=d\), there exists a shattered set \(C=\{x_1,\dots,x_d\}\).
+      Choose any subset \(C'\subseteq C\) of size \(2m\).
+      Because \(C\) is shattered, every labeling of \(C'\) is realized by some hypothesis in \(H\).
+      Therefore the restriction of \(H\) to \(C'\) is exactly the class of all binary functions on \(C'\).
+    </p>
+    <p>
+      Apply the No-Free-Lunch theorem to the finite domain \(C'\).
+      For the uniform distribution on \(C'\), any learner using only \(m\) examples must fail on some realizable
+      labeling with constant probability and constant error.
+      Since every labeling of \(C'\) is induced by a member of \(H\), this failure instance is realizable by the class
+      \(H\) itself.
+      Hence any learner for \(H\) requires at least on the order of \(d\) samples even to avoid constant error.
+    </p>
+    <p>
+      This proves the central message: VC dimension is not only an upper-bound parameter through uniform convergence;
+      it is also a lower-bound parameter because shattered sets contain many mutually indistinguishable target
+      functions.
+    </p>
+
+    <h3>7.3 Realizable and Agnostic Sample-Complexity Lower Bounds</h3>
+    <p>
+      The sharp rates are different in the realizable and agnostic settings.
+      For binary classification with VC dimension \(d\), the sample complexity scales as
+      \[
+      \Theta\!\left(\frac{d+\log(1/\delta)}{\epsilon}\right)
+      \]
+      in the realizable case and as
+      \[
+      \Theta\!\left(\frac{d+\log(1/\delta)}{\epsilon^2}\right)
+      \]
+      in the agnostic case, up to logarithmic refinements depending on the exact theorem statement.
+    </p>
+    <div class="proof">
+      <strong>Why the agnostic rate has \(1/\epsilon^2\).</strong>
+      In the agnostic setting, the learner must distinguish between two distributions whose risks differ by only
+      \(\epsilon\).
+      This is a statistical estimation problem, and the variance of Bernoulli observations forces
+      \(\Theta(1/\epsilon^2)\) samples even before model complexity is considered.
+      The factor \(d\) enters by embedding many such difficult binary decisions into a shattered set of size \(d\).
+    </div>
+    <div class="intuition">
+      Realizable learning is easier because a perfect hypothesis exists and the learner only has to identify one
+      consistent explanation.
+      Agnostic learning is harder because even the best hypothesis makes errors, so the learner must estimate and
+      compare close risks rather than just eliminate impossible hypotheses.
+    </div>
+
+    <h3>7.4 Why Lower Bounds Matter</h3>
+    <p>
+      Lower bounds are not pessimistic decoration; they tell us what kinds of improvements are impossible.
+      If a theorem states that every learner needs at least order \(d/\epsilon\) or \(d/\epsilon^2\) examples, then no
+      clever algorithm can beat that dependence uniformly over the whole class.
+      The only way to improve is to add more structure: margins, sparsity, noise assumptions, compression,
+      distributional assumptions, or a smaller hypothesis class.
+    </p>
+    <div class="example">
+      <strong>Example.</strong>
+      Decision stumps can be learned with very small sample complexity because their VC dimension is \(2\).
+      Halfspaces in \(\mathbb R^d\) require sample complexity proportional to \(d\) because their VC dimension is
+      \(d+1\).
+      This is not an artifact of analysis; it is forced by lower bounds.
+    </div>
+
+<h2 id="sec55">Part VIII: Compression, Oracles, Domain Adaptation, TDS (Pages 55–61)</h2>
 
 <p><strong>Compression learning (p.55–56):</strong> A <strong>compression scheme</strong> is a way to represent a hypothesis by a small subset of the training set (the “compression set”). If the algorithm’s output can be reconstructed from a set of size \(O(\sqrt{m}\,d^3)\) (or similar), one can derive a PAC bound: the probability of a bad hypothesis surviving is controlled by the number of ways to choose that many examples. So we get sample complexity that depends on the compression set size rather than the full class size. This connects to Occam’s razor: simpler (compressible) hypotheses generalize better.</p>
 <p><strong>Learning from oracles (p.57–58):</strong> Instead of labeled examples, we may have access to a <strong>positive oracle</strong> \(O_+\) (returns a positive example on request) and a <strong>negative oracle</strong> \(O_-\) (returns a negative example). The goal is to find a classifier with small error relative to both oracles. Algorithms typically query both oracles and maintain a hypothesis consistent with the examples seen; the sample complexity can be analyzed similarly to PAC.</p>
 
-<h3>6.1 Domain Adaptation and the Joint Error (Page 59)</h3>
+<h3>8.1 Domain Adaptation and the Joint Error (Page 59)</h3>
 <p><strong>The problem of shift.</strong> Standard PAC learning assumes the training and test distributions are the same. <strong>Domain adaptation</strong> addresses the case where they differ: the learner receives a <strong>labeled</strong> training set from \(D_{\mathrm{train}}\) and an <strong>unlabeled</strong> (or partially labeled) test set from \(D_{\mathrm{test}}\). The question is how well we can perform on \(D_{\mathrm{test}}\) when we only have labels from \(D_{\mathrm{train}}\).</p>
 <p><strong>The joint error (\(\lambda\)).</strong> A fundamental limit of learning under shift is the <strong>joint error</strong>: the minimum combined error that any single concept in the class can achieve on both distributions:
 \[
@@ -921,7 +1187,7 @@ So more complex classes (larger \(d\)) or smaller \(\epsilon\) both require more
 \]
 If \(\lambda\) is large, no single function in \(\mathcal{C}\) can do well on both domains at once—there is an inherent tension between fitting the training domain and the test domain. If \(\lambda = 0\), a perfect classifier exists for both; that special case is often called <strong>covariate shift</strong> (only the input distribution changes, not the conditional label distribution).</p>
 
-<h3>6.2 Generalization Bounds and Discrepancy (Page 60)</h3>
+<h3>8.2 Generalization Bounds and Discrepancy (Page 60)</h3>
 <p><strong>Generalization bound under shift.</strong> The error on the test distribution can be bounded in terms of the training error, the joint error \(\lambda\), and a measure of how far the two distributions are:
 \[
 \mathrm{err}_{D_{\mathrm{test}}}(h) \le \mathrm{err}_{D_{\mathrm{train}}}(h) + \lambda + \mathrm{dist}(D_{\mathrm{train}}, D_{\mathrm{test}}).
@@ -961,26 +1227,26 @@ So we compare how often \(f_1\) and \(f_2\) disagree under \(D\) versus under \(
   So test error is bounded by <strong>training error</strong> plus the joint error \(\lambda\) plus the discrepancy.
 </div>
 
-<h3>6.3 TDS Learning and the Perceptron (Page 61)</h3>
+<h3>8.3 TDS Learning and the Perceptron (Page 61)</h3>
 <p><strong>Testable learning with distribution shift (TDS).</strong> In the <strong>TDS</strong> model, the learner can <strong>certify</strong> its performance. The algorithm receives labeled training data from the training domain and unlabeled data from the test domain. It must either <strong>ACCEPT</strong>—and then guarantee low error on the test distribution—or <strong>REJECT</strong> when the shift is too large to certify (e.g. when certification would be impossible or unreliable). So we get a testable guarantee: if the algorithm accepts, we have a bound on test error; if it rejects, we know not to trust the model under the observed shift.</p>
 <p><strong>Error proof logic.</strong> A typical proof uses the triangle inequality to decompose test error. For a hypothesis \(h\), the test error can be written as the sum of (1) the disagreement between \(h\) and the best-fitting function \(c^* \in \mathcal{C}\) on the test distribution, and (2) that function’s own error on the test distribution (which is at most \(\lambda\) when we use the minimizer defining \(\lambda\)). So \(\mathrm{err}_{D_{\mathrm{test}}}(h)\) is bounded by the disagreement with the best \(c \in \mathcal{C}\) plus \(\lambda\). If we can control the disagreement (e.g. via unlabeled test data and the discrepancy), we can certify that test error is low; otherwise we reject.</p>
-<p><strong>Bridge to the Perceptron.</strong> The notes then connect to practical algorithms for learning halfspaces. The <strong>Perceptron (Rosenblatt, 1958)</strong> is an online algorithm that learns a linear separator. Under a <strong>margin</strong> assumption (there exists a unit vector \(w^*\) such that \(y\,(w^* \cdot x) \ge \rho\) for all examples), the Perceptron’s mistakes are bounded by \(1/\rho^2\). So we move from the statistical setting (domain adaptation, discrepancy, TDS) to the mistake-bounded setting: the Perceptron provides a concrete learner with a clean guarantee when data are separable with margin \(\rho\).
+<p><strong>Bridge to the Perceptron.</strong> The notes then connect to practical algorithms for learning halfspaces. The <strong>Perceptron (Rosenblatt, 1958)</strong> is an online algorithm that learns a linear separator. Under a <strong>margin</strong> assumption (there exists a unit vector \(w^*\) such that \(y\,(w^* \cdot x) \ge \rho\) for all examples), the Perceptron’s mistakes are bounded by \(1/\rho^2\). So we move from the statistical setting (domain adaptation, discrepancy, TDS) to the mistake-bounded setting: the Perceptron provides a concrete learner with a clean guarantee when data are separable with margin \(\rho\).</p>
 
 <!-- ========== SECTION 6 ========== -->
-<h2 id="sec4">Part VII: The Perceptron Algorithm (Pages 62–64)</h2>
+<h2 id="sec4">Part IX: The Perceptron Algorithm (Pages 62–64)</h2>
 
 <p><strong>Halfspaces with margin (p.62):</strong> Margin \(\rho\) on the unit sphere. <strong>Update rule (p.62):</strong> \(w_{\mathrm{new}} = w_{\mathrm{old}} + yx\).</p>
 <p><strong>Perceptron margin bound (p.63):</strong> \(M \le 1/\rho^2\) using Cauchy–Schwarz (see full proof below).</p>
 <p><strong>Polynomial threshold functions (p.64):</strong> Higher-order / feature expansion for non-linear boundaries. <strong>Example:</strong> To learn circles \(x^2 + y^2 \le r^2\), map \((x,y) \mapsto (x^2, y^2)\) or use a feature expansion so that a linear separator in the new space corresponds to the circle in the original space.</p>
 <p><strong>Motivation.</strong> We want an efficient, mistake-bounded algorithm for <em>halfspaces</em> (linear separators). Linear programming can find a separator in polynomial time, but the perceptron gives a very simple update with a clean mistake bound.</p>
 
-<h3>7.1 Function Class: Halfspaces</h3>
+<h3>9.1 Function Class: Halfspaces</h3>
 <div class="defn">
   \(\mathcal{C}\) is the set of halfspaces: \( f(x) = \mathrm{sign}(w \cdot x + \theta) \). For convenience we use labels \(y \in \{-1,+1\}\). We can absorb the threshold into \(w\) by adding a coordinate that is always 1: \(f(x) = \mathrm{sign}(w \cdot x)\). The vector \(w\) is unknown.
 </div>
 <p><strong>Alternative (LP):</strong> Finding a separating \(w\) from labeled examples \((x_i, y_i)\) can be written as linear inequalities \(y_i(w \cdot x_i) \ge 0\) (or \(\ge 1\) for margin). Solving this with linear programming is polynomial-time but more expensive than the simple perceptron update.</p>
 
-<h3>7.2 Algorithm</h3>
+<h3>9.2 Algorithm</h3>
 <ul>
   <li>Initialize \(w\) (e.g. \(\mathbf{0}\) or any unit vector).</li>
   <li>On example \(x\): predict \(\widehat{y} = \mathrm{sign}(w \cdot x)\).</li>
@@ -990,18 +1256,18 @@ So we compare how often \(f_1\) and \(f_2\) disagree under \(D\) versus under \(
   <strong>Unified update:</strong> on every mistake, \( w \leftarrow w + y\, x \).
 </div>
 <div class="intuition">
-  <strong>Why add \(yx\)?</strong> We want \(w \cdot x\) to have the same sign as \(y\). If we predicted +1 but \(y = -1\), then \(w \cdot x > 0\); adding \(yx = -x\) reduces \(w \cdot x\) for this \(x\) (and similar points). If we predicted -1 but \(y = +1\), then \(w \cdot x < 0\); adding \(yx = +x\) increases \(w \cdot x\). So we nudge \(w\) in the direction that would have made our prediction correct.
+  <strong>Why add \(yx\)?</strong> We want \(w \cdot x\) to have the same sign as \(y\). If we predicted +1 but \(y = -1\), then \(w \cdot x \gt 0\); adding \(yx = -x\) reduces \(w \cdot x\) for this \(x\) (and similar points). If we predicted -1 but \(y = +1\), then \(w \cdot x \lt 0\); adding \(yx = +x\) increases \(w \cdot x\). So we nudge \(w\) in the direction that would have made our prediction correct.
 </div>
 
-<h3>7.3 Margin Assumption</h3>
+<h3>9.3 Margin Assumption</h3>
 <div class="defn">
-  There exists a unit-norm separator \(w^*\) (\(\|w^*\| = 1\)) and a <strong>margin</strong> \(\rho > 0\) such that for every example \((x,y)\), \( y\,(w^* \cdot x) \ge \rho \). We assume \(\|x\| \le 1\) (or \(\|x\| = 1\) for simplicity). Then every point is at distance at least \(\rho\) from the separating hyperplane \(\{ z : w^* \cdot z = 0 \}\).
+  There exists a unit-norm separator \(w^*\) (\(\|w^*\| = 1\)) and a <strong>margin</strong> \(\rho \gt 0\) such that for every example \((x,y)\), \( y\,(w^* \cdot x) \ge \rho \). We assume \(\|x\| \le 1\) (or \(\|x\| = 1\) for simplicity). Then every point is at distance at least \(\rho\) from the separating hyperplane \(\{ z : w^* \cdot z = 0 \}\).
 </div>
 <div class="intuition">
   <strong>Why margin?</strong> If data are only barely separable (\(y\,(w^* \cdot x)\) close to 0), the perceptron might need many small nudges. A large \(\rho\) means data are “far” from the boundary, so each update makes more progress and we get a finite mistake bound.
 </div>
 
-<h3>7.4 Perceptron Convergence Theorem (Mistake Bound \(O(1/\rho^2)\))</h3>
+<h3>9.4 Perceptron Convergence Theorem (Mistake Bound \(O(1/\rho^2)\))</h3>
 <p><strong>Theorem.</strong> Under the margin assumption (and \(\|x\| = 1\)), the perceptron makes at most \(1/\rho^2\) mistakes.</p>
 <div class="intuition">
   <strong>Proof idea.</strong> We track two quantities: (1) \(w \cdot w^*\)—how aligned our weight is with the true separator. Each mistake increases this by at least \(\rho\). (2) \(\|w\|^2\)—how large our weight is. Each mistake increases this by at most 1. So after \(t\) mistakes we have \(w \cdot w^* \ge t\rho\) and \(\|w\|^2 \le t\). By Cauchy–Schwarz, \(w \cdot w^* \le \|w\|\). So \(t\rho \le \sqrt{t}\), hence \(t \le 1/\rho^2\).
@@ -1040,18 +1306,18 @@ So we compare how often \(f_1\) and \(f_2\) disagree under \(D\) versus under \(
   The perceptron convergence theorem requires separability with positive margin. Once that assumption fails, the algorithm is no longer guaranteed to settle down.
 </div>
 
-<h3>7.5 Kernel Perceptron</h3>
+<h3>9.5 Kernel Perceptron</h3>
 <p>To learn non-linear boundaries, map \(x \mapsto \phi(x)\) into a high-dimensional feature space and run perceptron in that space. The weight vector is then a linear combination of the mistaken examples: \(w = \sum_j \alpha_j y_j \phi(x_j)\), so predictions are \(\mathrm{sign}\bigl(\sum_j \alpha_j y_j \,\phi(x_j) \cdot \phi(x)\bigr)\). The update only needs inner products \(\phi(x) \cdot \phi(z)\). A <strong>kernel</strong> \(K(x,z) = \phi(x) \cdot \phi(z)\) computes this without explicitly constructing \(\phi\). Example: \(K(x,z) = (x \cdot z)^2\) corresponds to a quadratic feature map; we get polynomial boundaries with cost in the original dimension.</p>
 <div class="intuition">
   <strong>Kernel trick.</strong> We never need to store or compute \(\phi(x)\); we only need \(K(x,z)\). For polynomial kernels \(K(x,z) = (x \cdot z)^d\), the implicit \(\phi\) has dimension \(O(n^d)\), but \(K(x,z)\) is computed in \(O(n)\) time.
 </div>
 
 <!-- ========== SECTION 5 ========== -->
-<h2 id="sec2reg">Part VIII: Linear Regression and Regularization (Pages 65–74)</h2>
+<h2 id="sec2reg">Part X: Linear Regression and Regularization (Pages 65–74)</h2>
 
 <p><strong>Motivation.</strong> In supervised regression we observe pairs \((x^1, y^1), \ldots, (x^m, y^m)\) and want to fit a function \(f(x)\) so that predictions \(f(x^i)\) are close to the labels \(y^i\). The standard approach is to minimize squared error; we then add regularization to control overfitting and study how that affects bias and variance.</p>
 
-<h3>8.1 Linear Regression Foundations (Pages 65–67)</h3>
+<h3>10.1 Linear Regression Foundations (Pages 65–67)</h3>
 <p><strong>Objective.</strong> We choose \(f\) to minimize the mean squared error on the data:
 \[
 \frac{1}{m} \sum_{i=1}^{m} \bigl(f(x^i) - y^i\bigr)^2.
@@ -1091,24 +1357,24 @@ When we restrict to linear functions \(f(x) = w^T x\) (or \(f(x) = \beta_0 + \be
 \]
 So the slope is the covariance of \(x\) and \(y\) normalized by the variance of \(x\); the intercept centers the line at the means.</p>
 
-<h3>8.2 Matrix Form and Normal Equations (Pages 68–69)</h3>
+<h3>10.2 Matrix Form and Normal Equations (Pages 68–69)</h3>
 <p>With \(X\) the \(m \times d\) matrix of inputs and \(y\) the vector of labels, we minimize \(\|Xw - y\|_2^2\). Geometrically, we are projecting the vector \(y\) onto the column space (span) of \(X\). The optimal \(w\) is the one for which the <strong>residual vector \((y - Xw)\) is orthogonal to every column of \(X\)</strong>—that is, the residual lies in the orthogonal complement of the column space. So \(X^T(y - Xw) = 0\), which rearranges to the <strong>normal equations</strong>:
 \[
 X^T X w = X^T y \quad\Longrightarrow\quad w = (X^T X)^{-1} X^T y
 \]
 (when \(X^T X\) is invertible).</p>
 <p><strong>Maximum likelihood and OLS.</strong> If we assume the data are generated as \(y^i = w^T x^i + \epsilon^i\) with \(\epsilon^i \sim N(0, \sigma^2)\) i.i.d., then the log-likelihood of the data is a constant minus \(\frac{1}{2\sigma^2}\sum_i (y_i - w^T x_i)^2\). Maximizing the log-likelihood is therefore equivalent to minimizing the sum of squared residuals. So <strong>under Gaussian noise, MLE and ordinary least squares (OLS) give the same solution</strong>.</p>
-<h3>8.3 Ordinary Least Squares (OLS) — Gradient Derivation</h3>
+<h3>10.3 Ordinary Least Squares (OLS) — Gradient Derivation</h3>
 <p>Minimize \(\|Xw - y\|^2 = \sum_i (x_i^T w - y_i)^2\). Taking the gradient with respect to \(w\):</p>
 <div class="formula">
   \[ \nabla_w \|Xw - y\|^2 = 2X^T(Xw - y). \]
 </div>
-<p>Setting to zero gives the <strong>normal equations</strong> \(X^T X w = X^T y\). If \(X^T X\) is invertible, \(w = (X^T X)^{-1} X^T y\). If not (e.g. \(n < d\) or collinearity), the solution is not unique or we use Ridge.</p>
+<p>Setting to zero gives the <strong>normal equations</strong> \(X^T X w = X^T y\). If \(X^T X\) is invertible, \(w = (X^T X)^{-1} X^T y\). If not (e.g. \(n \lt d\) or collinearity), the solution is not unique or we use Ridge.</p>
 <div class="intuition">
   <strong>Why the normal equations?</strong> We are projecting \(y\) onto the column space of \(X\). The residual \(Xw - y\) must be orthogonal to every column of \(X\), i.e. \(X^T(Xw - y) = 0\). That is exactly \(X^T X w = X^T y\).
 </div>
 
-<h3>8.4 Ridge Regression (L2) and Regularization (Pages 70–72)</h3>
+<h3>10.4 Ridge Regression (L2) and Regularization (Pages 70–72)</h3>
 <p><strong>Objective.</strong> To reduce overfitting or handle ill-posed problems (e.g. \(X^T X\) singular), we add a penalty on the norm of \(w\):
 \[
 \min_w \;\|Xw - y\|_2^2 + \lambda \|w\|_2^2.
@@ -1122,22 +1388,22 @@ Adding \(\lambda I\) ensures the matrix is invertible even when \(X^T X\) is not
 \[
 \mathrm{Variance} = \frac{m\beta\sigma^2}{(\lambda + m\beta)^2}, \qquad \mathrm{Bias}^2 = \frac{\lambda^2 (a^*)^2}{(\lambda + m\beta)^2}.
 \]
-So \(\mathrm{MSE} = \mathrm{Variance} + \mathrm{Bias}^2\). When \(\lambda = 0\) (OLS), variance can be large and bias zero; when \(\lambda \to \infty\), variance goes to zero but bias grows. The <strong>optimal \(\lambda^*</strong> that minimizes MSE in this setting is
+So \(\mathrm{MSE} = \mathrm{Variance} + \mathrm{Bias}^2\). When \(\lambda = 0\) (OLS), variance can be large and bias zero; when \(\lambda \to \infty\), variance goes to zero but bias grows. The <strong>optimal \(\lambda^*\)</strong> that minimizes MSE in this setting is
 \[
 \lambda^* = \frac{\sigma^2}{(a^*)^2}.
 \]
-So when there is noise (\(\sigma^2 > 0\)), a positive \(\lambda\) can achieve lower MSE than OLS—Ridge can outperform unregularized least squares by trading a little bias for a reduction in variance.</p>
+So when there is noise (\(\sigma^2 \gt 0\)), a positive \(\lambda\) can achieve lower MSE than OLS—Ridge can outperform unregularized least squares by trading a little bias for a reduction in variance.</p>
 <div class="intuition">
   <strong>Why Ridge helps.</strong> When \(X^T X\) is nearly singular, small changes in \(y\) can cause huge changes in \(w\). Adding \(\lambda I\) stabilizes the inverse and shrinks \(w\) toward zero; the optimal \(\lambda^*\) balances variance and bias.
 </div>
 
-<h3>8.5 Lasso (L1)</h3>
+<h3>10.5 Lasso (L1)</h3>
 <p>Minimize \(\|Xw - y\|^2 + \lambda \|w\|_1\). The L1 penalty \(\|w\|_1 = \sum_j |w_j|\) drives many coefficients to <em>exactly</em> zero (sparse solutions). No closed form; optimize with (sub)gradient or coordinate descent.</p>
 <div class="intuition">
   <strong>Why sparsity?</strong> The L1 ball has “corners” on the axes; when the level sets of the loss hit such a corner, some \(w_j\) become exactly 0. L2 (Ridge) gives a smooth ball, so weights shrink but rarely hit zero exactly.
 </div>
 
-<h3>8.6 Bias–Variance Decomposition</h3>
+<h3>10.6 Bias–Variance Decomposition</h3>
 <p>For an estimator \(\hat{a}\) of a quantity \(a\), expand \(\mathbb{E}[(\hat{a} - a)^2]\):</p>
 <div class="proof">
   <strong>Derivation.</strong> Write \(\hat{a} - a = (\hat{a} - \mathbb{E}[\hat{a}]) + (\mathbb{E}[\hat{a}] - a)\). Then
@@ -1145,23 +1411,23 @@ So when there is noise (\(\sigma^2 > 0\)), a positive \(\lambda\) can achieve lo
   Taking expectation: the cross term vanishes because \(\mathbb{E}[\hat{a} - \mathbb{E}[\hat{a}]] = 0\). So
   \[ \mathrm{MSE}(\hat{a}) = \mathbb{E}[(\hat{a} - a)^2] = \mathrm{Var}(\hat{a}) + \bigl(\mathbb{E}[\hat{a}] - a\bigr)^2 = \mathrm{Var}(\hat{a}) + \mathrm{Bias}(\hat{a})^2. \]
 </div>
-<p>OLS (\(\lambda = 0\)): unbiased, possibly high variance. Ridge/Lasso (\(\lambda > 0\)): bias toward zero, lower variance. Optimal \(\lambda\) minimizes MSE.</p>
+<p>OLS (\(\lambda = 0\)): unbiased, possibly high variance. Ridge/Lasso (\(\lambda \gt 0\)): bias toward zero, lower variance. Optimal \(\lambda\) minimizes MSE.</p>
 <div class="intuition">
   <strong>Tradeoff.</strong> As \(\lambda\) increases, the estimator is pulled toward zero (bias increases) but becomes less sensitive to the sample (variance decreases). The best \(\lambda\) balances the two.
 </div>
 
-<h3>8.7 Kernel Methods (Pages 73–74)</h3>
+<h3>10.7 Kernel Methods (Pages 73–74)</h3>
 <p><strong>Feature expansion.</strong> Linear boundaries in the original space may be inadequate. We can map inputs \(x\) to a higher-dimensional vector \(\phi(x)\) (e.g. quadratic features like \(x_1^2, x_1 x_2, x_2^2\)) and fit a linear model in that space. That yields non-linear decision boundaries in the original \(x\)-space.</p>
 <p><strong>The kernel trick.</strong> Many algorithms (including regression and the perceptron) only need inner products \(\langle \phi(x^1), \phi(x^2) \rangle\). A <strong>kernel function</strong> \(K(x^1, x^2)\) is defined to equal this inner product in some feature space: \(K(x^1, x^2) = \langle \phi(x^1), \phi(x^2) \rangle\). We can then work in the high-dimensional space without ever forming \(\phi(x)\) explicitly—we only evaluate \(K\). For example, \(K(x,z) = (x \cdot z)^2\) corresponds to a quadratic feature map.</p>
 <p><strong>Weight representation.</strong> In the feature space, the optimal weight vector \(w\) can be expressed as a linear combination of the training instance mappings: \(w = \sum_i y^i \phi(x^i)\) (with coefficients given by the labels or by the dual solution). Prediction on a new point \(z\) is then a sum of kernel evaluations: \(f(z) = \sum_i y^i K(x^i, z)\). We never need to store or compute the high-dimensional \(\phi\); we only need the kernel \(K\).</p>
 
 <!-- ========== SECTION 3 ========== -->
 <!-- ========== SECTION 4 ========== -->
-<h2 id="sec7">Part IX: Optimization &amp; Loss (Pages 75–84)</h2>
+<h2 id="sec7">Part XI: Optimization &amp; Loss (Pages 75–84)</h2>
 
 <p><strong>Motivation.</strong> Training a model usually means choosing parameters \(w\) that minimize a loss function \(f(w)\). We do this iteratively: from the current \(w\), we take a step that reduces \(f\). This section explains why moving in the direction of the negative gradient works, how to do it (gradient descent and its stochastic variant), how fast we converge under smoothness, and how common loss functions and logistic regression fit into this picture.</p>
 
-<h3>9.1 Convexity and the Intuition of Gradient Descent (Pages 75–76)</h3>
+<h3>11.1 Convexity and the Intuition of Gradient Descent (Pages 75–76)</h3>
 <p><strong>Convexity.</strong> A function \(f\) is <strong>convex</strong> if the graph lies below the chord between any two points. In other words, the value at the midpoint is at most the average of the values at the endpoints:
 \[
 f\bigl(\tfrac{1}{2}x_1 + \tfrac{1}{2}x_2\bigr) \le \tfrac{1}{2}f(x_1) + \tfrac{1}{2}f(x_2).
@@ -1173,16 +1439,16 @@ f(y) \ge f(x) + \nabla f(x)^T (y - x)
 for all \(x, y\). So the linear approximation at \(x\) is a global <em>under</em>-estimator of \(f\). A consequence: any local minimum of a convex function is a global minimum.</p>
 <p><strong>Why the negative gradient?</strong> To minimize \(f\), we want to move in a direction that decreases \(f\) as much as possible. For a small step \(\epsilon d\) with \(\|d\| = 1\), Taylor expansion gives \(f(x + \epsilon d) \approx f(x) + \epsilon \nabla f(x)^T d\). To make this decrease, we want \(\nabla f(x)^T d\) as negative as possible. That is achieved by choosing \(d\) in the direction of \(-\nabla f(x)\). So <strong>moving in the direction of the negative gradient</strong> is the direction of steepest descent. For a sufficiently small step size, such a step is guaranteed to reduce \(f\).</p>
 
-<h3>9.2 The Gradient Descent Algorithm (Page 77)</h3>
+<h3>11.2 The Gradient Descent Algorithm (Page 77)</h3>
 <p><strong>Protocol.</strong></p>
 <ol>
   <li>Initialize \(w\) (e.g. at random).</li>
   <li>If \(\|\nabla f(w)\|_2\) is below a chosen threshold, stop (we are at an approximate stationary point, i.e. near a local minimum for convex \(f\)).</li>
-  <li>Otherwise, update: \(w_{\mathrm{new}} = w_{\mathrm{old}} - \eta \nabla f(w)\), where \(\eta > 0\) is the step size. Then repeat from step 2.</li>
+  <li>Otherwise, update: \(w_{\mathrm{new}} = w_{\mathrm{old}} - \eta \nabla f(w)\), where \(\eta \gt 0\) is the step size. Then repeat from step 2.</li>
 </ol>
 <p><strong>Quadratic example.</strong> For \(f(x) = x^T A x - b^T x\) (with \(A\) symmetric), the gradient is \(\nabla f(x) = 2Ax - b\). So the GD update is \(x \leftarrow x - \eta(2Ax - b)\). For convex quadratics (e.g. \(A \succeq 0\)), this converges to the minimizer when \(\eta\) is chosen appropriately.</p>
 
-<h3>9.3 Gradient Descent vs. Stochastic Gradient Descent (Page 78)</h3>
+<h3>11.3 Gradient Descent vs. Stochastic Gradient Descent (Page 78)</h3>
 <p><strong>Batch gradient for MSE.</strong> In linear regression we minimize the mean squared error \(\mathrm{MSE}(w) = \frac{1}{m}\sum_{j=1}^m (w^T x^j + b - y^j)^2\). The gradient is the average of the per-example gradients:
 \[
 \nabla \mathrm{MSE}(w) = \frac{2}{m} \sum_{j=1}^{m} (w^T x^j + b - y^j)\, x^j.
@@ -1215,7 +1481,7 @@ Batch gradient descent uses this full gradient at each iteration—expensive whe
   \bigl(\sigma(w^T x_i)-y_i\bigr)\,
   \sigma(w^T x_i)\bigl(1-\sigma(w^T x_i)\bigr)\,x_i.
   \]
-  Gradient descent with step size \(\eta>0\) becomes
+  Gradient descent with step size \(\eta\gt 0\) becomes
   \[
   w \leftarrow
   w
@@ -1228,7 +1494,7 @@ Batch gradient descent uses this full gradient at each iteration—expensive whe
   This is the batch update rule for a single sigmoid unit trained under mean squared error.
 </p>
 
-<h3>9.4 Smoothness and Convergence Analysis (Pages 79–81)</h3>
+<h3>11.4 Smoothness and Convergence Analysis (Pages 79–81)</h3>
 <p><strong>\(L\)-smoothness.</strong> A differentiable function \(f\) has <strong>\(L\)-Lipschitz gradients</strong> (or is <strong>\(L\)-smooth</strong>) if
 \[
 \|\nabla f(x) - \nabla f(y)\| \le L \|x - y\|_2
@@ -1261,16 +1527,16 @@ So we get an \(O(1/T)\) rate: after \(T\) steps, at least one iterate has gradie
   \[
   \partial \ell_i(w)=
   \begin{cases}
-    \{0\}, & y_i w^T x_i > 0,\\
-    \{-y_i x_i\}, & y_i w^T x_i < 0.
+    \{0\}, &amp; y_i w^T x_i \gt 0,\\
+    \{-y_i x_i\}, &amp; y_i w^T x_i \lt 0.
   \end{cases}
   \]
   Therefore an SGD step with step size \(\eta\) is
   \[
   w \leftarrow
   \begin{cases}
-    w, & y_i w^T x_i > 0,\\
-    w + \eta y_i x_i, & y_i w^T x_i < 0.
+    w, &amp; y_i w^T x_i \gt 0,\\
+    w + \eta y_i x_i, &amp; y_i w^T x_i \lt 0.
   \end{cases}
   \]
 </div>
@@ -1281,8 +1547,8 @@ So we get an \(O(1/T)\) rate: after \(T\) steps, at least one iterate has gradie
   The perceptron is not just an ad hoc rule: it is SGD on a convex loss that penalizes only currently misclassified examples.
 </div>
 
-<h3>9.5 Loss Functions and Logistic Regression (Pages 82–84)</h3>
-<p><strong>Loss comparison.</strong> In classification we predict with \(\mathrm{sign}(w^T x)\) and measure quality with a loss \(\ell(z)\) where \(z = y\, (w^T x)\) (so a correct prediction has \(z > 0\)).</p>
+<h3>11.5 Loss Functions and Logistic Regression (Pages 82–84)</h3>
+<p><strong>Loss comparison.</strong> In classification we predict with \(\mathrm{sign}(w^T x)\) and measure quality with a loss \(\ell(z)\) where \(z = y\, (w^T x)\) (so a correct prediction has \(z \gt 0\)).</p>
 <ul>
   <li><strong>0/1 loss:</strong> \(\ell(z) = \mathbf{1}[z \le 0]\)—counts mistakes directly. It is non-convex and non-smooth, so hard to optimize with gradient methods.</li>
   <li><strong>Hinge loss:</strong> \(\ell(z) = \max\{0, 1 - z\}\). Convex upper bound on 0/1 loss; used in SVMs. Non-differentiable at \(z = 1\).</li>
@@ -1295,12 +1561,366 @@ So we get an \(O(1/T)\) rate: after \(T\) steps, at least one iterate has gradie
 \]
 This is a sum of logistic losses (one per example). The function is <strong>convex in \(w\)</strong> (the Hessian is positive semi-definite), so gradient descent finds the global minimum—the maximum likelihood estimate. Thus logistic regression reduces to convex optimization and can be solved efficiently with GD or SGD.</p>
 
+<h3>11.6 Norms, Errors, and Losses: A Reference Sheet</h3>
+<p>
+  A <strong>norm</strong> measures the size of a vector or matrix. A <strong>loss</strong> measures the penalty for a
+  prediction. In many proofs, the norm controls geometry while the loss controls optimization and statistical risk.
+</p>
+<div class="defn">
+  <strong>Main vector norms.</strong> For \(x=(x_1,\dots,x_d)\in\mathbb{R}^d\),
+  \[
+  \|x\|_1 = \sum_{j=1}^d |x_j|,
+  \qquad
+  \|x\|_2 = \Bigl(\sum_{j=1}^d x_j^2\Bigr)^{1/2},
+  \qquad
+  \|x\|_\infty = \max_j |x_j|.
+  \]
+  More generally, for \(1\le p\lt\infty\),
+  \[
+  \|x\|_p = \Bigl(\sum_{j=1}^d |x_j|^p\Bigr)^{1/p}.
+  \]
+</div>
+<div class="intuition">
+  \(\|x\|_1\) measures total magnitude and promotes sparsity, \(\|x\|_2\) measures Euclidean length and is rotation
+  invariant, and \(\|x\|_\infty\) measures the largest coordinate error. In finite dimensions all these norms are
+  equivalent, but they emphasize different geometry.
+</div>
+<div class="proof">
+  <strong>Norm comparisons in \(\mathbb{R}^d\).</strong> For every \(x\in\mathbb{R}^d\),
+  \[
+  \|x\|_\infty \le \|x\|_2 \le \|x\|_1 \le \sqrt{d}\,\|x\|_2 \le d\,\|x\|_\infty.
+  \]
+  <strong>Proof.</strong> Since \(\max_j |x_j|^2 \le \sum_j x_j^2\), we get \(\|x\|_\infty \le \|x\|_2\). Also
+  \[
+  \|x\|_2^2=\sum_j x_j^2 \le \Bigl(\sum_j |x_j|\Bigr)^2=\|x\|_1^2,
+  \]
+  so \(\|x\|_2\le \|x\|_1\). By Cauchy-Schwarz,
+  \[
+  \|x\|_1=\sum_j |x_j|\cdot 1 \le \Bigl(\sum_j x_j^2\Bigr)^{1/2}\Bigl(\sum_j 1^2\Bigr)^{1/2}
+  =\sqrt{d}\,\|x\|_2.
+  \]
+  Finally, \(\|x\|_1\le d\,\|x\|_\infty\), hence \(\|x\|_2\le \|x\|_1\le d\,\|x\|_\infty\).
+  These inequalities are used constantly when converting one error guarantee into another.
+</div>
+<div class="defn">
+  <strong>Main matrix norms.</strong> For \(A=(A_{ij})\in\mathbb{R}^{m\times n}\),
+  \[
+  \|A\|_F = \Bigl(\sum_{i,j} A_{ij}^2\Bigr)^{1/2},
+  \qquad
+  \|A\|_{2\to 2} = \sup_{\|x\|_2=1}\|Ax\|_2.
+  \]
+  The Frobenius norm is the Euclidean norm of the entries. The operator norm is the largest stretch of a unit vector.
+  Under SVD,
+  \[
+  \|A\|_F^2=\sum_i \sigma_i^2,
+  \qquad
+  \|A\|_{2\to 2}=\sigma_1.
+  \]
+</div>
+<div class="example">
+  <strong>When each norm appears.</strong>
+  <p>\(\text{Ridge} \longleftrightarrow \|w\|_2^2\).</p>
+  <p>\(\text{Lasso} \longleftrightarrow \|w\|_1\).</p>
+  <p>\(\text{Margin bounds / geometry} \longleftrightarrow \|w\|_2\).</p>
+  <p>\(\text{Matrix approximation} \longleftrightarrow \|A-B\|_F\) or \(\|A-B\|_{2\to2}\).</p>
+  If a problem is about sparsity, expect \(\ell_1\). If it is about Euclidean geometry, projections, or spectral
+  behavior, expect \(\ell_2\) or operator norm.
+</div>
+<div class="defn">
+  <strong>Regression losses.</strong> If the true response is \(y\) and the prediction is \(\hat y\), common losses are
+  \[
+  \ell_{\mathrm{L1}}(\hat y,y)=|\hat y-y|,
+  \qquad
+  \ell_{\mathrm{L2}}(\hat y,y)=(\hat y-y)^2,
+  \qquad
+  \ell_{\mathrm{abs}}(\hat y,y)=|\hat y-y|.
+  \]
+  On a sample \((x_i,y_i)\), these produce
+  \[
+  \text{MAE}=\frac1m\sum_{i=1}^m |\hat y_i-y_i|,
+  \qquad
+  \text{MSE}=\frac1m\sum_{i=1}^m (\hat y_i-y_i)^2,
+  \qquad
+  \text{RMSE}=\sqrt{\text{MSE}}.
+  \]
+</div>
+<div class="proof">
+  <p><strong>Why L1 and L2 behave differently.</strong></p>
+  <p>
+    Squared loss penalizes large residuals more strongly because the penalty grows quadratically. Absolute loss grows
+    only linearly, so it is more robust to outliers. The optimizer of expected squared loss is the conditional mean,
+    while the optimizer of expected absolute loss is a conditional median.
+  </p>
+  <p><strong>Proof for absolute loss.</strong> Fix a real random variable \(Y\) and consider</p>
+  \[
+  \phi(a)=\mathbb{E}|Y-a|.
+  \]
+  <p>For differentiable points of \(\phi\),</p>
+  \[
+  \phi'(a)=\mathbb{P}(Y\lt a)-\mathbb{P}(Y\gt a).
+  \]
+  <p>
+    Thus \(a\) is optimal exactly when the mass on each side is at most \(1/2\), which is the defining property of a
+    median.
+  </p>
+</div>
+<div class="example">
+  <strong>Example.</strong> If the residuals are \(1,1,1,10\), then
+  \[
+  \text{MAE}=\frac{13}{4}=3.25,
+  \qquad
+  \text{MSE}=\frac{1+1+1+100}{4}=25.75.
+  \]
+  The outlier \(10\) dominates the squared loss much more than the absolute loss.
+</div>
+<div class="defn">
+  <strong>Classification losses in margin form.</strong> Let \(z=y\,f(x)\), where \(y\in\{\pm1\}\). Then
+  \[
+  \ell_{0/1}(z)=\mathbf{1}[z\le 0],
+  \qquad
+  \ell_{\mathrm{hinge}}(z)=\max(0,1-z),
+  \]
+  \[
+  \ell_{\mathrm{log}}(z)=\log(1+e^{-z}),
+  \qquad
+  \ell_{\mathrm{exp}}(z)=e^{-z},
+  \qquad
+  \ell_{\mathrm{square}}(z)=(1-z)^2.
+  \]
+</div>
+<div class="proof">
+  <strong>What each classification loss is for.</strong>
+  <ul>
+    <li>\(0/1\) loss measures actual mistakes but is hard to optimize directly.</li>
+    <li>Hinge loss is convex and upper-bounds \(0/1\) loss, so it is useful for margin methods such as SVMs.</li>
+    <li>Logistic loss is convex and smooth, so it is standard for gradient methods and probabilistic modeling.</li>
+    <li>Exponential loss is the natural loss behind AdaBoost.</li>
+    <li>Square loss is algebraically convenient but can over-penalize large negative margins.</li>
+  </ul>
+</div>
+<div class="example">
+  <strong>Margin-loss comparison at one point.</strong> If \(z=2\), then
+  \[
+  \ell_{0/1}(2)=0,\quad
+  \ell_{\mathrm{hinge}}(2)=0,\quad
+  \ell_{\mathrm{log}}(2)=\log(1+e^{-2}),\quad
+  \ell_{\mathrm{exp}}(2)=e^{-2}.
+  \]
+  If \(z=-1\), then
+  \[
+  \ell_{0/1}(-1)=1,\quad
+  \ell_{\mathrm{hinge}}(-1)=2,\quad
+  \ell_{\mathrm{log}}(-1)=\log(1+e),\quad
+  \ell_{\mathrm{exp}}(-1)=e.
+  \]
+  So all surrogate losses penalize a negative margin, but they do so with different severity and smoothness.
+</div>
+<div class="defn">
+  <strong>Huber loss.</strong> To interpolate between L1 and L2, define for parameter \(\delta\gt 0\)
+  \[
+  \ell_\delta(r)=
+  \begin{cases}
+    \frac12 r^2, &amp; |r|\le \delta,\\
+    \delta |r|-\frac12\delta^2, &amp; |r|\gt \delta.
+  \end{cases}
+  \]
+  It is quadratic near \(0\) and linear in the tails, so it is smooth near the optimum but more robust to outliers
+  than squared loss.
+</div>
+<div class="intuition">
+  <strong>Cheat-sheet rule.</strong>
+  Use \(\ell_2\) when you want smooth calculus, projections, or Gaussian models.
+  Use \(\ell_1\) when you want robustness or sparsity.
+  Use hinge/logistic/exponential when you are replacing hard classification error by a tractable surrogate.
+  Use operator norm for worst-case stretching and Frobenius norm for entrywise or energy-style error.
+</div>
+
+<h3>11.7 Major Inequalities: A Proof Toolkit</h3>
+<p>
+  Many arguments in learning theory reduce to choosing the right inequality. The recurring pattern is:
+  bound a hard quantity by a simpler one, then simplify that bound using convexity, orthogonality, or independence.
+</p>
+<div class="defn">
+  <strong>Jensen's inequality.</strong> If \(f\) is convex and \(X\) is integrable, then
+  \[
+  f(\mathbb{E}X)\le \mathbb{E}[f(X)].
+  \]
+  If \(f\) is concave, the inequality reverses:
+  \[
+  f(\mathbb{E}X)\ge \mathbb{E}[f(X)].
+  \]
+</div>
+<div class="proof">
+  <strong>How Jensen is used.</strong> Jensen converts averages inside a nonlinear function into averages outside it.
+  In decision trees, if \(\Phi\) is a concave impurity function and a node with class-probability vector \(p\) is
+  split into children with weights \(\alpha_j\) and class vectors \(p^{(j)}\), then
+  \[
+  p=\sum_j \alpha_j p^{(j)}
+  \qquad\Longrightarrow\qquad
+  \Phi(p)\ge \sum_j \alpha_j \Phi\bigl(p^{(j)}\bigr).
+  \]
+  Therefore weighted impurity cannot increase after splitting. This is the clean proof that further splitting helps
+  for entropy and Gini impurity.
+</div>
+<div class="example">
+  <strong>Example.</strong> For binary entropy
+  \[
+  H(p)=-p\log p-(1-p)\log(1-p),
+  \]
+  concavity gives
+  \[
+  H\Bigl(\sum_j \alpha_j p_j\Bigr)\ge \sum_j \alpha_j H(p_j).
+  \]
+  So the parent entropy is at least the weighted average child entropy.
+</div>
+<div class="defn">
+  <strong>Cauchy-Schwarz.</strong> For vectors \(x,y\in\mathbb{R}^d\),
+  \[
+  |\langle x,y\rangle|\le \|x\|_2\|y\|_2.
+  \]
+  Equality holds iff one vector is a scalar multiple of the other.
+</div>
+<div class="proof">
+  <strong>How Cauchy-Schwarz is used.</strong> This is the default way to turn an inner product into norm bounds. It
+  appears in margin arguments, norm comparisons, regression, and SVD. For example, if \(\|w\|_2\le B\) and
+  \(\|x\|_2\le R\), then
+  \[
+  |w^\top x|\le BR.
+  \]
+  This is the standard step when bounding predictions, margins, gradients, or Lipschitz constants.
+</div>
+<div class="example">
+  <strong>Example.</strong> In the perceptron proof,
+  \[
+  w^{(t)}\cdot w^*
+  \le
+  \|w^{(t)}\|_2\,\|w^*\|_2.
+  \]
+  After lower-bounding the left-hand side by \(t\rho\), this yields an upper bound on the number of mistakes.
+</div>
+<div class="defn">
+  <strong>Triangle inequality and Minkowski.</strong>
+  \[
+  \|x+y\|_p\le \|x\|_p+\|y\|_p.
+  \]
+  In particular,
+  \[
+  \|x+y\|_2\le \|x\|_2+\|y\|_2.
+  \]
+</div>
+<div class="proof">
+  <strong>How the triangle inequality is used.</strong> Use it when you decompose error into approximation error plus
+  estimation error, or empirical error plus generalization gap. For example,
+  \[
+  \|A-C\|_F \le \|A-B\|_F+\|B-C\|_F.
+  \]
+  Many multi-step approximation arguments are just repeated applications of this inequality.
+</div>
+<div class="defn">
+  <strong>AM-GM and Young's inequality.</strong> For nonnegative \(a,b\),
+  \[
+  ab\le \frac{a^2+b^2}{2}.
+  \]
+  More generally, Young's inequality lets you split a product into a sum of powers.
+</div>
+<div class="proof">
+  <strong>How AM-GM is used.</strong> This is the standard way to eliminate a cross term. If
+  \[
+  2ab
+  \]
+  appears inside a quadratic expansion, replace it by \(a^2+b^2\). This is common when bounding
+  \(\|x+y\|_2^2\), gradients, or residual terms.
+</div>
+<div class="defn">
+  <strong>Union bound.</strong> For events \(E_1,\dots,E_m\),
+  \[
+  \mathbb{P}\Bigl(\bigcup_{i=1}^m E_i\Bigr)\le \sum_{i=1}^m \mathbb{P}(E_i).
+  \]
+</div>
+<div class="proof">
+  <strong>How the union bound is used.</strong> This is how one passes from a guarantee for a single hypothesis or
+  a single vector to a simultaneous guarantee over a finite set. In learning theory, if each bad event has
+  probability at most \(\delta/|H|\), then all hypotheses in a finite class behave well simultaneously with
+  probability at least \(1-\delta\).
+</div>
+<div class="defn">
+  <strong>Markov and Chebyshev.</strong> If \(X\ge 0\), then for \(t\gt 0\),
+  \[
+  \mathbb{P}(X\ge t)\le \frac{\mathbb{E}X}{t}.
+  \]
+  If \(X\) has finite variance, then for \(t\gt 0\),
+  \[
+  \mathbb{P}(|X-\mathbb{E}X|\ge t)\le \frac{\operatorname{Var}(X)}{t^2}.
+  \]
+</div>
+<div class="proof">
+  <strong>How Markov and Chebyshev are used.</strong> Markov converts a bound on expectation into a tail bound.
+  Chebyshev converts variance control into concentration. They are weaker than Hoeffding but require fewer
+  assumptions, so they are useful when variables are unbounded or only second moments are available.
+</div>
+<div class="defn">
+  <strong>Hoeffding's inequality.</strong> If \(X_1,\dots,X_m\) are independent and \(a_i\le X_i\le b_i\), then for
+  \(S_m=\sum_{i=1}^m X_i\),
+  \[
+  \mathbb{P}\bigl(S_m-\mathbb{E}S_m \ge t\bigr)
+  \le
+  \exp\Bigl(-\frac{2t^2}{\sum_{i=1}^m (b_i-a_i)^2}\Bigr).
+  \]
+  In the i.i.d. Bernoulli or bounded-loss case, for the empirical mean \(\widehat{\mu}\),
+  \[
+  \mathbb{P}\bigl(|\widehat{\mu}-\mu|\ge \epsilon\bigr)\le 2e^{-2m\epsilon^2}.
+  \]
+</div>
+<div class="proof">
+  <strong>How Hoeffding is used.</strong> This is the main concentration inequality behind finite-class PAC bounds and
+  confidence intervals for bounded random variables. If the loss lies in \([0,1]\), then empirical loss
+  \(\widehat{L}(h)\) concentrates around population loss \(L(h)\):
+  \[
+  \mathbb{P}\bigl(|\widehat{L}(h)-L(h)|\ge \epsilon\bigr)\le 2e^{-2m\epsilon^2}.
+  \]
+  Then apply the union bound over a finite hypothesis class.
+</div>
+<div class="example">
+  <strong>Example.</strong> If \(|H|=1000\) and you want
+  \[
+  |\widehat{L}(h)-L(h)|\le \epsilon
+  \]
+  for all \(h\in H\) with probability at least \(1-\delta\), it is enough that
+  \[
+  2|H|e^{-2m\epsilon^2}\le \delta.
+  \]
+  Solving gives
+  \[
+  m\ge \frac{1}{2\epsilon^2}\log\frac{2|H|}{\delta}.
+  \]
+</div>
+<div class="defn">
+  <strong>Chernoff-style multiplicative bounds.</strong> For sums of independent Bernoulli variables, one often uses
+  stronger relative-error bounds than Hoeffding. If \(X=\sum_{i=1}^m X_i\) with \(X_i\in\{0,1\}\) independent and
+  \(\mu=\mathbb{E}X\), then for \(0\lt\epsilon\lt 1\),
+  \[
+  \mathbb{P}(X\ge (1+\epsilon)\mu)\le \exp\Bigl(-\frac{\epsilon^2\mu}{3}\Bigr),
+  \qquad
+  \mathbb{P}(X\le (1-\epsilon)\mu)\le \exp\Bigl(-\frac{\epsilon^2\mu}{2}\Bigr).
+  \]
+</div>
+<div class="intuition">
+  <strong>Which inequality to reach for.</strong>
+  Use Jensen for convexity/concavity arguments.
+  Use Cauchy-Schwarz for inner products and norm bounds.
+  Use the triangle inequality for decomposing error.
+  Use AM-GM to remove cross terms.
+  Use the union bound to make finitely many events hold simultaneously.
+  Use Markov or Chebyshev when you only know moments.
+  Use Hoeffding or Chernoff when you have independence and bounded variables.
+</div>
+
 <hr>
 <p><em>End of review. Ordered by Scribble Together pages 1–84. Every algorithm, proof, and key example from the handwritten notes is included or summarized. Open in a browser to render math.</em></p>
 
-<h2 id="part1">Part X: Neural Networks</h2>
+<h2 id="part1">Part XII: Neural Networks</h2>
 
-    <h3>10.1 Feedforward Networks and the Hypothesis Class</h3>
+    <h3>12.1 Feedforward Networks and the Hypothesis Class</h3>
     <p>
       A feedforward neural network is a directed acyclic graph \(G=(V,E)\) arranged in layers
       \(V_0,V_1,\dots,V_T\). The layer \(V_0\) is the input layer. Its coordinates are the input variables and,
@@ -1372,7 +1992,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       architecture may vary.
     </p>
 
-    <h3>10.2 Why Neural Networks Matter: Approximation, Estimation, Optimization</h3>
+    <h3>12.2 Why Neural Networks Matter: Approximation, Estimation, Optimization</h3>
     <p>
       Neural networks are best understood by splitting the analysis into three separate questions.
     </p>
@@ -1390,7 +2010,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       and still be hard to optimize over.
     </div>
 
-    <h3>10.3 Expressive Power: Universality and Circuit Simulation</h3>
+    <h3>12.3 Expressive Power: Universality and Circuit Simulation</h3>
     <p>
       A depth-2 sign network can represent every Boolean function. The construction is explicit: for each positive
       input pattern \(u\), construct one hidden neuron that fires exactly on \(u\), then let the output neuron compute
@@ -1455,7 +2075,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       construction proves representability but not useful learnability.
     </div>
 
-    <h3>10.4 Geometric Intuition for Depth</h3>
+    <h3>12.4 Geometric Intuition for Depth</h3>
     <p>
       A sign neuron defines a halfspace. Therefore, one hidden layer forms several halfspaces and then combines the
       corresponding binary indicators. If the output computes a conjunction, the network represents an intersection of
@@ -1467,7 +2087,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       structures such as unions of polytopes and other nested decision sets.
     </div>
 
-    <h3>10.5 Sample Complexity and VC Dimension</h3>
+    <h3>12.5 Sample Complexity and VC Dimension</h3>
     <p>
       For binary classification with sign activation at the output, sample complexity is controlled by VC dimension.
       The standard bound is:
@@ -1529,7 +2149,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       parameters, up to a logarithmic factor.
     </p>
 
-    <h3>10.6 Hardness of Training</h3>
+    <h3>12.6 Hardness of Training</h3>
     <p>
       Despite the positive approximation and sample-complexity results, optimization is hard. Even exact empirical risk
       minimization for very small networks with sign activations is NP-hard. More strongly, even approximate ERM is
@@ -1540,7 +2160,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       representational or statistical.
     </div>
 
-    <h3>10.7 SGD and Backpropagation</h3>
+    <h3>12.7 SGD and Backpropagation</h3>
     <p>
       The practical training rule is stochastic gradient descent. One chooses a differentiable loss
       \(L_D(w)\) as a function of the weights and repeatedly updates \(w\) in the negative gradient direction using
@@ -1552,25 +2172,191 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       derivatives using one forward pass and one backward pass through the network.
     </p>
     <div class="proof">
-      <strong>Local derivative pattern.</strong>
-      For an edge from \(v_{t-1,j}\) to \(v_{t,i}\),
+      <strong>Forward pass notation.</strong>
+      For neuron \(i\) in layer \(t\), write
       \[
-      \frac{\partial \ell}{\partial w_{t,i,j}}
+      a_{t,i}=\sum_j w_{t,i,j}\,o_{t-1,j}+b_{t,i},
+      \qquad
+      o_{t,i}=\sigma(a_{t,i}).
+      \]
+      Here \(a_{t,i}\) is the pre-activation and \(o_{t,i}\) is the post-activation. If the network output is
+      \(\widehat y=o_{T,1}\) and the loss on one example is \(\ell(\widehat y,y)\), then the goal of backpropagation
+      is to compute all derivatives of \(\ell\) with respect to all weights and biases.
+    </div>
+    <div class="defn">
+      <strong>Indexing convention for \(w_{t,i,j}\).</strong>
+      The weight \(w_{t,i,j}\) is the weight on the edge
+      \[
+      \text{(neuron \(j\) in layer \(t-1\))} \longrightarrow \text{(neuron \(i\) in layer \(t\))}.
+      \]
+      So:
+      <ul>
+        <li>\(t\) tells you which layer receives the signal.</li>
+        <li>\(i\) is the destination neuron index in layer \(t\).</li>
+        <li>\(j\) is the source neuron index in layer \(t-1\).</li>
+      </ul>
+      Equivalently, the matrix \(W_t=(w_{t,i,j})\) maps activations from layer \(t-1\) to pre-activations in layer
+      \(t\).
+    </div>
+    <div class="proof">
+      <strong>Backpropagation error signals.</strong>
+      Define
+      \[
+      \delta_{t,i}=\frac{\partial \ell}{\partial a_{t,i}}.
+      \]
+      These are the key hidden quantities propagated backward through the network.
+    </div>
+    <div class="proof">
+      <strong>Output-layer formula.</strong>
+      At the output layer,
+      \[
+      \delta_{T,i}
       =
-      \delta_{t,i}\,\sigma'(a_{t,i})\,o_{t-1,j}.
+      \frac{\partial \ell}{\partial o_{T,i}}\sigma'(a_{T,i}).
+      \]
+      This is just the chain rule:
+      \[
+      \frac{\partial \ell}{\partial a_{T,i}}
+      =
+      \frac{\partial \ell}{\partial o_{T,i}}
+      \frac{\partial o_{T,i}}{\partial a_{T,i}}
+      =
+      \frac{\partial \ell}{\partial o_{T,i}}\sigma'(a_{T,i}).
+      \]
+    </div>
+    <div class="proof">
+      <strong>Hidden-layer recursion.</strong>
+      For a hidden neuron \(i\) in layer \(t\lt T\),
+      \[
+      \delta_{t,i}
+      =
+      \sigma'(a_{t,i})\sum_k w_{t+1,k,i}\,\delta_{t+1,k}.
+      \]
+      <strong>Proof.</strong> The variable \(a_{t,i}\) affects the loss only through the later pre-activations
+      \(a_{t+1,k}\). By the chain rule,
+      \[
+      \frac{\partial \ell}{\partial a_{t,i}}
+      =
+      \sum_k
+      \frac{\partial \ell}{\partial a_{t+1,k}}
+      \frac{\partial a_{t+1,k}}{\partial a_{t,i}}.
+      \]
+      Since
+      \[
+      a_{t+1,k}=\sum_r w_{t+1,k,r}o_{t,r}+b_{t+1,k}
+      \qquad\text{and}\qquad
+      o_{t,r}=\sigma(a_{t,r}),
+      \]
+      we get
+      \[
+      \frac{\partial a_{t+1,k}}{\partial a_{t,i}}
+      =
+      w_{t+1,k,i}\sigma'(a_{t,i}).
+      \]
+      Substituting gives
+      \[
+      \delta_{t,i}
+      =
+      \sum_k \delta_{t+1,k} w_{t+1,k,i}\sigma'(a_{t,i})
+      =
+      \sigma'(a_{t,i})\sum_k w_{t+1,k,i}\delta_{t+1,k}.
       \]
     </div>
     <p>
-      Once the error signal \(\delta_{t,i}\) is known, the derivative with respect to an incoming weight is a local
-      product. This is why backpropagation is efficient.
+      Once the error signal \(\delta_{t,i}\) is known, the derivatives with respect to incoming parameters are local.
     </p>
+    <div class="proof">
+      <strong>Gradient formulas for weights and biases.</strong>
+      For an edge from neuron \(j\) in layer \(t-1\) to neuron \(i\) in layer \(t\),
+      \[
+      \frac{\partial \ell}{\partial w_{t,i,j}}
+      =
+      \delta_{t,i}\,o_{t-1,j},
+      \qquad
+      \frac{\partial \ell}{\partial b_{t,i}}
+      =
+      \delta_{t,i}.
+      \]
+      <strong>Proof.</strong> Since
+      \[
+      a_{t,i}=\sum_j w_{t,i,j}o_{t-1,j}+b_{t,i},
+      \]
+      we have
+      \[
+      \frac{\partial a_{t,i}}{\partial w_{t,i,j}}=o_{t-1,j},
+      \qquad
+      \frac{\partial a_{t,i}}{\partial b_{t,i}}=1.
+      \]
+      Therefore
+      \[
+      \frac{\partial \ell}{\partial w_{t,i,j}}
+      =
+      \frac{\partial \ell}{\partial a_{t,i}}
+      \frac{\partial a_{t,i}}{\partial w_{t,i,j}}
+      =
+      \delta_{t,i}o_{t-1,j},
+      \]
+      and similarly \(\partial \ell/\partial b_{t,i}=\delta_{t,i}\).
+    </div>
+    <div class="proof">
+      <strong>Backpropagation algorithm.</strong>
+      For one training example \((x,y)\):
+      <ol>
+        <li>Run a forward pass to compute all \(a_{t,i}\) and \(o_{t,i}\).</li>
+        <li>Compute the output-layer errors \(\delta_{T,i}\).</li>
+        <li>For \(t=T-1,T-2,\dots,1\), compute hidden-layer errors using
+          \[
+          \delta_{t,i}=\sigma'(a_{t,i})\sum_k w_{t+1,k,i}\delta_{t+1,k}.
+          \]
+        </li>
+        <li>Compute gradients by
+          \[
+          \frac{\partial \ell}{\partial w_{t,i,j}}=\delta_{t,i}o_{t-1,j},
+          \qquad
+          \frac{\partial \ell}{\partial b_{t,i}}=\delta_{t,i}.
+          \]
+        </li>
+        <li>Update with SGD:
+          \[
+          w_{t,i,j}\leftarrow w_{t,i,j}-\eta \frac{\partial \ell}{\partial w_{t,i,j}},
+          \qquad
+          b_{t,i}\leftarrow b_{t,i}-\eta \frac{\partial \ell}{\partial b_{t,i}}.
+          \]
+        </li>
+      </ol>
+    </div>
     <div class="example">
-      <strong>Example.</strong> In a one-hidden-layer network, the derivative with respect to the weight from input
-      coordinate \(j\) to hidden neuron \(i\) is obtained from three quantities:
-      \(x_j\), \(\sigma'(a_{1,i})\), and \(\delta_{1,i}\).
+      <strong>One-hidden-layer formulas.</strong>
+      Suppose
+      \[
+      h_i=\sigma\!\left(\sum_j w^{(1)}_{i,j}x_j+b^{(1)}_i\right),
+      \qquad
+      \widehat y=\sigma\!\left(\sum_i w^{(2)}_i h_i+b^{(2)}\right).
+      \]
+      Then
+      \[
+      \delta^{(2)}=\frac{\partial \ell}{\partial \widehat y}\sigma'(a^{(2)}),
+      \]
+      and for each hidden unit \(i\),
+      \[
+      \delta^{(1)}_i=\sigma'(a^{(1)}_i)\,w^{(2)}_i\,\delta^{(2)}.
+      \]
+      Therefore
+      \[
+      \frac{\partial \ell}{\partial w^{(2)}_i}=\delta^{(2)}h_i,
+      \qquad
+      \frac{\partial \ell}{\partial w^{(1)}_{i,j}}=\delta^{(1)}_i x_j.
+      \]
+      This is the exam pattern to memorize: output error first, then push it backward through the weights, then
+      multiply by the incoming activation.
+    </div>
+    <div class="intuition">
+      Backpropagation is just repeated chain rule on a layered graph. The reason it is efficient is that each
+      intermediate derivative \(\delta_{t,i}\) is computed once and then reused for every incoming weight at that
+      neuron.
     </div>
 
-    <h3>10.8 Smoothness and the Basic Gradient-Descent Descent Lemma</h3>
+    <h3>12.8 Smoothness and the Basic Gradient-Descent Descent Lemma</h3>
     <p>
       If the gradient is Lipschitz, then a single step of gradient descent provably decreases the objective. This is
       the basic deterministic estimate behind gradient-based training.
@@ -1670,9 +2456,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       gradient is already zero.
     </p>
 
-    <h2 id="part2">Part XI: Boosting</h2>
+    <h2 id="part2">Part XIII: Boosting</h2>
 
-    <h3>11.1 Weak Learnability</h3>
+    <h3>13.1 Weak Learnability</h3>
     <p>
       <strong>What boosting is.</strong> Boosting is a procedure for converting many simple predictors, each only
       slightly better than random guessing, into one strong predictor with very small training error and often much
@@ -1694,7 +2480,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     </p>
     <p>
       A weak learner is only required to do slightly better than chance. In binary classification this means producing
-      a hypothesis with error at most \(1/2-\gamma\) for some fixed \(\gamma>0\).
+      a hypothesis with error at most \(1/2-\gamma\) for some fixed \(\gamma\gt 0\).
     </p>
     <div class="defn">
       <strong>Definition.</strong>
@@ -1726,7 +2512,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       is computational: a weak learner may be easy to implement even when full ERM over a richer class is not.
     </p>
 
-    <h3>11.2 Confidence Amplification by Repeated Runs</h3>
+    <h3>13.2 Confidence Amplification by Repeated Runs</h3>
     <p>
       Before one reaches AdaBoost itself, there is a simpler amplification principle: if a randomized learner succeeds
       with constant probability bounded away from \(1/2\), then repeated independent runs reduce the confidence
@@ -1738,7 +2524,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       independently \(t\) times, then the probability that all \(t\) runs fail is at most \(\eta^t\).
       Therefore it suffices to choose
       \[
-      t \ge \frac{\log(1/\delta)}{\log(1/\eta^{-1})}
+      t \ge \frac{\log(1/\delta)}{\log(\eta^{-1})}
       \]
       to make the failure probability at most \(\delta\).
     </div>
@@ -1751,7 +2537,10 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       t\log(\eta)\le \log(\delta),
       \]
-      which rearranges to the stated lower bound on \(t\).
+      which rearranges to
+      \[
+      t \ge \frac{\log(\delta)}{\log(\eta)} = \frac{\log(1/\delta)}{\log(\eta^{-1})}.
+      \]
     </p>
     <div class="example">
       <strong>Example.</strong> If one run succeeds with probability \(0.6\), then one run fails with probability
@@ -1762,7 +2551,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       Hence \(t=\Theta(\log(1/\delta))\) runs suffice to reach confidence \(1-\delta\).
     </div>
 
-    <h3>11.3 Decision Stumps as the Canonical Base Class</h3>
+    <h3>13.3 Decision Stumps as the Canonical Base Class</h3>
     <p>
       A decision stump thresholds one coordinate and predicts according to the sign of the comparison. Weighted ERM
       over stumps is efficient because, after sorting along a coordinate, the weighted empirical error can be updated
@@ -1778,7 +2567,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       to do: not solve the problem completely, but consistently beat random guessing.
     </div>
 
-    <h3>11.4 AdaBoost: Update Rule and Interpretation</h3>
+    <h3>13.4 AdaBoost: Update Rule and Interpretation</h3>
     <p>
       AdaBoost is the canonical boosting algorithm.
       It keeps a probability distribution \(D^{(t)}\) over the training examples.
@@ -1832,7 +2621,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
     </div>
 
-    <h3>11.5 Accuracy of the Current Weak Learner Under the Next Distribution</h3>
+    <h3>13.5 Accuracy of the Current Weak Learner Under the Next Distribution</h3>
     <p>
       One of the cleanest algebraic facts about AdaBoost is that after the reweighting step, the current weak
       classifier \(h_t\) has weighted accuracy exactly \(1/2\) under the new distribution \(D^{(t+1)}\). This is not
@@ -1871,8 +2660,8 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       \widetilde D_i^{(t+1)}=
       \begin{cases}
-      \beta_t D_i^{(t)} & i\in C_t,\\
-      D_i^{(t)} & i\in M_t.
+      \beta_t D_i^{(t)} &amp; i\in C_t,\\
+      D_i^{(t)} &amp; i\in M_t.
       \end{cases}
       \]
       Therefore the total unnormalized mass on correctly classified examples is
@@ -1919,7 +2708,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       that the current classifier is no better than random guessing with respect to the new weights.
     </p>
 
-    <h3>11.6 Why the Training Error Falls Exponentially</h3>
+    <h3>13.6 Why the Training Error Falls Exponentially</h3>
     <p>
       The analysis tracks an exponential potential. Each round shrinks the potential by a factor
       \(\sqrt{1-4\gamma^2}\), which is at most \(e^{-2\gamma^2}\). Since 0-1 training loss is upper bounded by the
@@ -2006,8 +2795,11 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       Since \(L_S(h_S)\le Z_T\), the theorem follows.
     </p>
     <p>
-      <strong>Corollary.</strong> The number of rounds needed to drive training error below \(\eta\) is
-      \(T = \Omega((1/\gamma^2)\log(1/\eta))\). Thus even a small fixed edge \(\gamma\) can be amplified into
+      <strong>Corollary.</strong> To drive the training error below \(\eta\), it suffices to take
+      \[
+      T \ge \frac{1}{2\gamma^2}\log\!\left(\frac{1}{\eta}\right).
+      \]
+      Thus even a small fixed edge \(\gamma\) can be amplified into
       very small training error.
     </p>
     <p>
@@ -2015,7 +2807,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       multiplicatively.
     </p>
 
-    <h3>11.7 The Weighted-Mass Calculation Behind AdaBoost</h3>
+    <h3>13.7 The Weighted-Mass Calculation Behind AdaBoost</h3>
     <p>
       The weighted-mass calculation underlying the exponential training-error theorem is worth isolating because it
       captures the one-step contraction mechanism directly.
@@ -2025,7 +2817,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       Let the weighted error at round \(t\) be
       \[
       \epsilon_t=\frac12-\gamma_t,
-      \qquad \gamma_t&gt;0,
+      \qquad \gamma_t\gt 0,
       \]
       and set
       \[
@@ -2090,7 +2882,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       contraction compounds over rounds.
     </p>
 
-    <h3>11.8 Capacity of the Final Class</h3>
+    <h3>13.8 Capacity of the Final Class</h3>
     <p>
       The output of AdaBoost lies in
     </p>
@@ -2166,9 +2958,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       This is the precise sense in which boosting exposes the bias-complexity tradeoff through the parameter \(T\).
     </p>
 
-    <h2 id="part3">Part XII: Confidence Intervals and Concentration</h2>
+    <h2 id="part3">Part XIV: Confidence Intervals and Concentration</h2>
 
-    <h3>12.1 General Template</h3>
+    <h3>14.1 General Template</h3>
     <p>
       A confidence interval is a high-probability interval for an unknown population quantity. If \(\hat\theta\) is an
       estimator of \(\theta\), then a level-\(1-\delta\) interval is any interval \([L,U]\) satisfying
@@ -2184,7 +2976,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       result as an interval.
     </p>
 
-    <h3>12.2 Exact Gaussian Confidence Intervals for Linear Regression Coefficients</h3>
+    <h3>14.2 Exact Gaussian Confidence Intervals for Linear Regression Coefficients</h3>
     <p>
       Concentration inequalities give distribution-free intervals. When the noise model is genuinely Gaussian, one
       can do better: the estimator itself is Gaussian, so the confidence interval is obtained from an exact normal
@@ -2335,7 +3127,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
     </div>
 
-    <h3>12.3 Why Gaussian Maximum Likelihood Reduces to Least Squares</h3>
+    <h3>14.3 Why Gaussian Maximum Likelihood Reduces to Least Squares</h3>
     <p>
       Under Gaussian noise, minimizing the sum of squared residuals is not an ad hoc choice; it is exactly the
       maximum-likelihood estimator.
@@ -2419,20 +3211,20 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       the theory.
     </p>
 
-    <h3>12.4 Hoeffding’s Inequality and Its Interval</h3>
+    <h3>14.4 Hoeffding’s Inequality and Its Interval</h3>
     <p>
       Let \(Z_1,\dots,Z_m\) be i.i.d. random variables with \(a\le Z_i\le b\) almost surely and mean \(\mu\). Then
     </p>
     <div class="proof">
       \[
-      \mathbb{P}\!\left(\left|\frac1m\sum_{i=1}^m Z_i-\mu\right|>\epsilon\right)
+      \mathbb{P}\!\left(\left|\frac1m\sum_{i=1}^m Z_i-\mu\right|\gt\epsilon\right)
       \le
       2\exp\!\left(\frac{-2m\epsilon^2}{(b-a)^2}\right).
       \]
     </div>
     <p>
       <strong>Proof.</strong> Let \(X_i = Z_i - \mathbb{E}[Z_i]\). Then \(\mathbb{E}[X_i]=0\), and since
-      \(a\le Z_i\le b\), we also have \(X_i\in [a-\mu,b-\mu]\). For any \(\lambda>0\),
+      \(a\le Z_i\le b\), we also have \(X_i\in [a-\mu,b-\mu]\). For any \(\lambda\gt 0\),
       \[
       \mathbb{P}\!\left(\frac1m\sum_i X_i \ge \epsilon\right)
       =
@@ -2468,7 +3260,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       A union bound over the upper and lower tails proves
       \[
-      \mathbb{P}\!\left(\left|\frac1m\sum_i X_i\right|>\epsilon\right)
+      \mathbb{P}\!\left(\left|\frac1m\sum_i X_i\right|\gt\epsilon\right)
       \le
       2\exp\!\left(\frac{-2m\epsilon^2}{(b-a)^2}\right).
       \]
@@ -2518,7 +3310,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       So a valid interval is approximately \([0,0.256]\) after clipping to \([0,1]\).
     </div>
 
-    <h3>12.5 Bernstein-Type Bounds</h3>
+    <h3>14.5 Bernstein-Type Bounds</h3>
     <p>
       Hoeffding only uses boundedness. Bernstein-type inequalities also use variance, so they become tighter when the
       loss is already small.
@@ -2593,7 +3385,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \]
       so there is nothing to prove. Otherwise define
       \[
-      x=p-q-b>0.
+      x=p-q-b\gt 0.
       \]
       Then \(p=x+q+b\), and from \(p\le q+\sqrt{ap}+b\) we get
       \[
@@ -2650,7 +3442,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       Hoeffding is safer and more general. Bernstein is sharper when variance or error is small.
     </div>
 
-    <h3>12.6 Validation and Interpretation</h3>
+    <h3>14.6 Validation and Interpretation</h3>
     <p>
       Confidence intervals matter especially in model comparison. If two validation errors differ by less than the
       uncertainty radius, the observed difference may be sampling noise. Thus “smaller validation error” does not by
@@ -2661,9 +3453,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       mathematically correct way to decide whether the difference is meaningful.
     </div>
 
-    <h2 id="part4">Part XIII: Principal Component Analysis</h2>
+    <h2 id="part4">Part XV: Principal Component Analysis</h2>
 
-    <h3>13.1 The Optimization Problem</h3>
+    <h3>15.1 The Optimization Problem</h3>
     <p>
       Given vectors \(x_1,\dots,x_m\in\mathbb{R}^d\), PCA seeks a linear map into \(\mathbb{R}^n\) with
       \(n&lt;d\), together with a linear reconstruction map back into \(\mathbb{R}^d\), so that the total squared
@@ -2671,7 +3463,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     </p>
     <div class="proof">
       \[
-      \min_{W\in\mathbb{R}^{n,d},\,U\in\mathbb{R}^{d,n}}
+      \min_{W\in\mathbb{R}^{n\times d},\,U\in\mathbb{R}^{d\times n}}
       \sum_{i=1}^m \|x_i-UWx_i\|_2^2.
       \]
     </div>
@@ -2680,7 +3472,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       the optimal low-dimensional <em>linear</em> reconstruction method under squared error.
     </p>
 
-    <h3>13.2 Why Orthogonal Projection Is Optimal</h3>
+    <h3>15.2 Why Orthogonal Projection Is Optimal</h3>
     <p>
       Once an \(n\)-dimensional subspace is fixed, the best reconstruction of a point from that subspace is its
       orthogonal projection. Hence the encoder-decoder problem collapses to a subspace-selection problem.
@@ -2694,12 +3486,12 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       Therefore reconstruction has the form \(UU^\top x\).
     </div>
     <p>
-      <strong>Proof.</strong> Fix arbitrary matrices \(U\in\mathbb{R}^{d,n}\) and \(W\in\mathbb{R}^{n,d}\). The set
+      <strong>Proof.</strong> Fix arbitrary matrices \(U\in\mathbb{R}^{d\times n}\) and \(W\in\mathbb{R}^{n\times d}\). The set
       of all vectors of the form \(UWx\) is an at-most-\(n\)-dimensional subspace
       \[
       R = \{UWy : y\in\mathbb{R}^d\} \subseteq \mathbb{R}^d.
       \]
-      Let \(V\in\mathbb{R}^{d,n}\) have orthonormal columns spanning \(R\), so \(V^\top V=I\). Every vector in \(R\)
+      Let \(V\in\mathbb{R}^{d\times n}\) have orthonormal columns spanning \(R\), so \(V^\top V=I\). Every vector in \(R\)
       can be written as \(Vy\) for some \(y\in\mathbb{R}^n\). For a fixed \(x\in\mathbb{R}^d\),
       \[
       \|x-Vy\|_2^2
@@ -2726,7 +3518,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \(n\)-dimensional subspaces.
     </p>
 
-    <h3>13.3 Trace Maximization and the Eigenvector Solution</h3>
+    <h3>15.3 Trace Maximization and the Eigenvector Solution</h3>
     <p>
       If \(A=\sum_{i=1}^m x_i x_i^\top\), then the optimization can be rewritten as
     </p>
@@ -2747,7 +3539,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     <p>
       <strong>Proof.</strong> Let \(A=VDV^\top\) be an eigendecomposition, where the diagonal entries satisfy
       \(D_{11}\ge D_{22}\ge \cdots \ge D_{dd}\ge 0\), and the columns of \(V\) are orthonormal eigenvectors.
-      For any feasible \(U\in\mathbb{R}^{d,n}\) with \(U^\top U=I\), define \(B=V^\top U\). Then
+      For any feasible \(U\in\mathbb{R}^{d\times n}\) with \(U^\top U=I\), define \(B=V^\top U\). Then
       \(B^\top B = U^\top V V^\top U = I\). Hence
       \[
       \operatorname{trace}(U^\top A U) = \operatorname{trace}(B^\top D B)
@@ -2767,7 +3559,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       \beta_1=\cdots=\beta_n=1,\qquad \beta_{n+1}=\cdots=\beta_d=0.
       \]
-      Indeed, if some mass were placed on a smaller eigenvalue while a larger eigenvalue had \(\beta_j<1\), moving
+      Indeed, if some mass were placed on a smaller eigenvalue while a larger eigenvalue had \(\beta_j\lt 1\), moving
       that mass upward would increase the objective.
     </p>
     <p>
@@ -2784,7 +3576,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       descriptions of the same method.
     </p>
 
-    <h3>13.4 Interpretation: Variance and Reconstruction</h3>
+    <h3>15.4 Interpretation: Variance and Reconstruction</h3>
     <p>
       PCA can be interpreted in two equivalent ways:
     </p>
@@ -2802,29 +3594,218 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       point onto it, and discards the orthogonal noise component.
     </div>
 
-    <h3>13.5 Centering and the Gram Matrix Trick</h3>
+    <h3>15.5 Centering and the Gram Matrix Trick</h3>
     <p>
       In practice one first centers the data by subtracting the empirical mean. Otherwise the leading component may
       mostly capture the mean offset instead of true variation.
     </p>
+    <div class="proof">
+      <strong>How to actually do PCA.</strong>
+      Suppose the data points are \(x_1,\dots,x_m\in\mathbb{R}^d\).
+      <ol>
+        <li>Compute the empirical mean
+          \[
+          \bar x=\frac1m\sum_{i=1}^m x_i.
+          \]
+        </li>
+        <li>Center the data:
+          \[
+          \widetilde x_i=x_i-\bar x.
+          \]
+        </li>
+        <li>Form the centered data matrix
+          \[
+          X=[\widetilde x_1\ \widetilde x_2\ \cdots\ \widetilde x_m]\in\mathbb{R}^{d\times m}.
+          \]
+        </li>
+        <li>Form the scatter matrix
+          \[
+          A=XX^\top=\sum_{i=1}^m \widetilde x_i \widetilde x_i^\top.
+          \]
+          Up to the factor \(1/m\), this is the empirical covariance matrix.
+        </li>
+        <li>Find the top \(k\) eigenvectors \(v_1,\dots,v_k\) of \(A\). These are the principal directions.</li>
+        <li>To compress a point \(x\), first center it and then project:
+          \[
+          z = U^\top (x-\bar x),
+          \qquad
+          U=[v_1\ \cdots\ v_k].
+          \]
+        </li>
+        <li>To reconstruct from the compressed coordinates \(z\), use
+          \[
+          \widehat x = \bar x + Uz.
+          \]
+        </li>
+      </ol>
+    </div>
+    <div class="proof">
+      <strong>Equivalent reconstruction formula.</strong>
+      Since
+      \[
+      z=U^\top(x-\bar x),
+      \]
+      substituting into the decoder gives
+      \[
+      \widehat x
+      =
+      \bar x + UU^\top(x-\bar x).
+      \]
+      Thus PCA reconstruction is exactly orthogonal projection of the centered vector onto the principal subspace,
+      followed by adding the mean back.
+    </div>
+    <div class="proof">
+      <strong>How to reconstruct an entire data matrix.</strong>
+      Let \(X\in\mathbb{R}^{d\times m}\) be the centered data matrix and let
+      \[
+      U_k=[v_1\ \cdots\ v_k].
+      \]
+      Then the rank-\(k\) PCA reconstruction of the centered data is
+      \[
+      \widehat X = U_kU_k^\top X.
+      \]
+      If \(X_{\mathrm{raw}}\) is the original uncentered data matrix and \(\bar x\mathbf{1}^\top\) is the mean matrix,
+      then
+      \[
+      \widehat X_{\mathrm{raw}} = \bar x\mathbf{1}^\top + U_kU_k^\top(X_{\mathrm{raw}}-\bar x\mathbf{1}^\top).
+      \]
+    </div>
+    <div class="example">
+      <strong>Step-by-step reconstruction of one point.</strong>
+      To reconstruct a new point \(x\) from its first \(k\) principal coordinates:
+      <ol>
+        <li>Subtract the mean: \(x_c=x-\bar x\).</li>
+        <li>Compute the coordinates:
+          \[
+          z_j=v_j^\top x_c,\qquad j=1,\dots,k.
+          \]
+        </li>
+        <li>Rebuild the point from those coordinates:
+          \[
+          \widehat x=\bar x+\sum_{j=1}^k z_j v_j.
+          \]
+        </li>
+      </ol>
+      So reconstruction is just “keep the components of the centered vector along the top principal directions and
+      discard the rest.”
+    </div>
+    <div class="example">
+      <strong>One-dimensional PCA recipe.</strong>
+      If the question asks only for the first principal component, then after centering you compute the top
+      eigenvector \(v_1\) of
+      \[
+      A=XX^\top.
+      \]
+      The scalar coordinate of a point \(x\) on that component is
+      \[
+      v_1^\top(x-\bar x),
+      \]
+      and its rank-1 reconstruction is
+      \[
+      \bar x + v_1 v_1^\top (x-\bar x).
+      \]
+    </div>
+    <div class="proof">
+      <strong>What the reconstruction error is.</strong>
+      The residual after rank-\(k\) PCA is
+      \[
+      r = x-\widehat x = (I-U_kU_k^\top)(x-\bar x).
+      \]
+      This is exactly the component orthogonal to the principal subspace. Hence
+      \[
+      \|x-\widehat x\|_2^2
+      =
+      \|(I-U_kU_k^\top)(x-\bar x)\|_2^2.
+      \]
+      Over the entire sample, PCA chooses \(U_k\) to make the sum of these squared residuals as small as possible.
+    </div>
+    <div class="intuition">
+      PCA does permit reconstruction, but only after deciding which \(k\)-dimensional subspace to keep. Unlike random
+      projection, the decoder is built into the method: project onto the learned principal subspace, then expand back
+      in that same basis.
+    </div>
     <p>
-      If \(d\gg m\), diagonalizing \(X^\top X\) is expensive. Instead diagonalize the smaller Gram matrix \(XX^\top\),
-      then recover the principal directions from its eigenvectors. This is the computational shortcut underlying kernel
-      PCA as well.
+      If \(d\gg m\), diagonalizing the \(d\times d\) matrix \(XX^\top\) is expensive. Instead diagonalize the smaller
+      Gram matrix
+      \[
+      G=X^\top X\in\mathbb{R}^{m\times m},
+      \]
+      then recover the principal directions from its eigenvectors. This is the computational shortcut underlying
+      kernel PCA as well.
     </p>
+    <div class="proof">
+      <strong>Gram-matrix trick for the first principal component.</strong>
+      Let \(\alpha_1\in\mathbb{R}^m\) be a unit eigenvector of
+      \[
+      G=X^\top X
+      \]
+      with largest eigenvalue \(\lambda_1\). Define
+      \[
+      v_1=\frac{1}{\sqrt{\lambda_1}}X\alpha_1.
+      \]
+      Then \(v_1\) is the first principal direction in \(\mathbb{R}^d\).
+    </div>
+    <div class="proof">
+      <strong>Proof.</strong> Since
+      \[
+      G\alpha_1 = X^\top X \alpha_1 = \lambda_1 \alpha_1,
+      \]
+      multiplying by \(X\) gives
+      \[
+      XX^\top (X\alpha_1)=\lambda_1 (X\alpha_1).
+      \]
+      Therefore \(X\alpha_1\) is an eigenvector of \(XX^\top\) with eigenvalue \(\lambda_1\). Moreover,
+      \[
+      \|X\alpha_1\|_2^2
+      =
+      \alpha_1^\top X^\top X \alpha_1
+      =
+      \alpha_1^\top G\alpha_1
+      =
+      \lambda_1 \|\alpha_1\|_2^2
+      =
+      \lambda_1,
+      \]
+      since \(\|\alpha_1\|_2=1\). Hence dividing by \(\sqrt{\lambda_1}\) normalizes the vector, so
+      \[
+      v_1=\lambda_1^{-1/2}X\alpha_1
+      \]
+      is a unit eigenvector of \(XX^\top\) for the largest eigenvalue. That is exactly the first principal component.
+    </div>
+    <div class="example">
+      <strong>How to use the Gram trick on an exam.</strong>
+      If the ambient dimension \(d\) is huge but the sample size \(m\) is small:
+      <ol>
+        <li>Center the columns of \(X\).</li>
+        <li>Compute the \(m\times m\) Gram matrix \(G=X^\top X\).</li>
+        <li>Find its top eigenpair \((\lambda_1,\alpha_1)\).</li>
+        <li>Recover the first principal direction by
+          \[
+          v_1=\lambda_1^{-1/2}X\alpha_1.
+          \]
+        </li>
+        <li>Project any centered point \(x-\bar x\) by computing \(v_1^\top(x-\bar x)\).</li>
+      </ol>
+      The point is that diagonalizing \(G\) costs work in \(m\), not in \(d\).
+    </div>
+    <div class="intuition">
+      The first principal component always lies in the span of the centered data points. The Gram-matrix trick works
+      because it first finds the right coefficients \(\alpha_1\) for that linear combination in sample space, then
+      converts them back into an ambient-space vector \(v_1\).
+    </div>
     <div class="intuition">
       Forgetting to center is one of the standard PCA mistakes. It can completely change the leading direction.
     </div>
 
-    <h2 id="part5">Part XIV: Random Projections</h2>
+    <h2 id="part5">Part XVI: Random Projections</h2>
 
-    <h3>14.1 The Core Idea</h3>
+    <h3>16.1 The Core Idea</h3>
     <p>
       Random projection is a dimension reduction method that does not fit the data. Instead it multiplies by a random
       matrix and relies on concentration of measure to preserve norms and distances with high probability.
     </p>
 
-    <h3>14.2 Single-Vector Concentration</h3>
+    <h3>16.2 Single-Vector Concentration</h3>
     <p>
       If \(W\) is a Gaussian random matrix and \(x\) is fixed, then
     </p>
@@ -2833,7 +3814,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \mathbb{P}\!\left(
       \left|
       \frac{\|(1/\sqrt n)Wx\|_2^2}{\|x\|_2^2}-1
-      \right|>\epsilon
+      \right|\gt\epsilon
       \right)
       \le
       2e^{-\epsilon^2 n/6}.
@@ -2844,7 +3825,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       one vector.
     </p>
 
-    <h3>14.3 Johnson-Lindenstrauss Lemma</h3>
+    <h3>16.3 Johnson-Lindenstrauss Lemma</h3>
     <p>
       A union bound upgrades the one-vector guarantee to a finite set \(Q\). The Johnson-Lindenstrauss conclusion is
       that dimension
@@ -2862,8 +3843,8 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       \mathbb{P}\!\left(
       \left|
-      \frac{\|Wu\|_2^2}{\|u\|_2^2}-1
-      \right|>\epsilon
+      \frac{\|(1/\sqrt n)Wu\|_2^2}{\|u\|_2^2}-1
+      \right|\gt\epsilon
       \right)
       \le 2e^{-\epsilon^2 n/6}.
       \]
@@ -2872,8 +3853,8 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \mathbb{P}\!\left(
       \exists u\in Q:
       \left|
-      \frac{\|Wu\|_2^2}{\|u\|_2^2}-1
-      \right|>\epsilon
+      \frac{\|(1/\sqrt n)Wu\|_2^2}{\|u\|_2^2}-1
+      \right|\gt\epsilon
       \right)
       \le 2|Q|e^{-\epsilon^2 n/6}.
       \]
@@ -2902,7 +3883,98 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       This is the main surprise: high ambient dimension alone is not the bottleneck.
     </p>
 
-    <h3>14.4 Contrast With PCA</h3>
+    <h3>16.4 What Random Projection Really Is</h3>
+    <p>
+      Random projection is not trying to discover the best low-dimensional structure in the data. It chooses a random
+      linear map
+      \[
+      R:\mathbb{R}^d\to\mathbb{R}^n
+      \]
+      and uses
+      \[
+      x\longmapsto \frac{1}{\sqrt n}Rx
+      \]
+      as a fast embedding. The point is not optimal reconstruction. The point is that with high probability this blind
+      map approximately preserves Euclidean geometry on the finite set of vectors you care about.
+    </p>
+    <div class="intuition">
+      <strong>What is actually preserved.</strong>
+      If norms are preserved for all differences \(x-y\), then pairwise distances are preserved:
+      \[
+      \left\|\frac{1}{\sqrt n}R(x-y)\right\|_2^2
+      \approx
+      \|x-y\|_2^2.
+      \]
+      So nearest neighbors, cluster separation, and margin geometry are approximately unchanged in the projected
+      space.
+    </div>
+    <div class="example">
+      <strong>Example.</strong> Suppose \(1000\) points lie in \(\mathbb{R}^{100000}\), and you only need pairwise
+      distances up to \(10\%\) distortion. Johnson-Lindenstrauss says that a target dimension on the order of
+      \[
+      n=O\!\left(\frac{\log 1000}{0.1^2}\right)
+      \]
+      is enough, independent of the original dimension \(100000\). So the geometry can often be compressed to a few
+      hundred or thousand coordinates without learning any model from the data.
+    </div>
+    <div class="proof">
+      <strong>How to actually use random projection.</strong>
+      <ol>
+        <li>Choose a target dimension \(n\) from the JL bound.</li>
+        <li>Draw a random matrix \(R\in\mathbb{R}^{n\times d}\), often Gaussian with entries \(N(0,1)\).</li>
+        <li>Project each vector by
+          \[
+          z=\frac{1}{\sqrt n}Rx.
+          \]
+        </li>
+        <li>Run the downstream geometric task in the projected space: nearest neighbors, clustering, margin
+          computations, or approximate distance queries.</li>
+      </ol>
+    </div>
+    <div class="defn">
+      <strong>Can you reconstruct the original vector?</strong>
+      In general, no exact reconstruction is possible when \(n\lt d\), because the map
+      \[
+      x\mapsto \frac1{\sqrt n}Rx
+      \]
+      is not injective. Distinct vectors can have the same projection. Random projection is therefore not a
+      compression-and-perfect-recovery method like an invertible change of basis.
+    </div>
+    <div class="proof">
+      <strong>Best approximate reconstruction from the projection.</strong>
+      If \(z=(1/\sqrt n)Rx\) is known and \(R\) is known, a standard approximate lift is the minimum-norm solution of
+      \[
+      \frac1{\sqrt n}Ru=z.
+      \]
+      This is
+      \[
+      \widehat x = \sqrt n\,R^+ z,
+      \]
+      where \(R^+\) is the Moore-Penrose pseudoinverse. This recovers the orthogonal projection of \(x\) onto the row
+      space of \(R\), not the full original vector.
+    </div>
+    <div class="proof">
+      <strong>Why the pseudoinverse gives the row-space component.</strong>
+      Let \(P=R^+R\). Then \(P\) is the orthogonal projector onto the row space of \(R\). Since
+      \[
+      z=\frac1{\sqrt n}Rx,
+      \]
+      we have
+      \[
+      \widehat x=\sqrt n\,R^+z = R^+Rx = Px.
+      \]
+      So \(\widehat x\) is exactly the part of \(x\) visible through the rows of \(R\). Any component of \(x\) in the
+      null space of \(R\) is lost.
+    </div>
+    <div class="example">
+      <strong>Finite-set recovery viewpoint.</strong>
+      If the vector is known in advance to lie in a finite set \(S\), then reconstruction can mean:
+      project every candidate in \(S\), then given \(z\), choose the candidate whose projection is closest to \(z\).
+      Because JL preserves pairwise distances, this nearest-projected-point rule can identify the original point
+      approximately, and sometimes exactly if the original points were well separated.
+    </div>
+
+    <h3>16.5 Contrast With PCA</h3>
     <p>
       PCA solves an optimal reconstruction problem. Random projection solves a geometry-preservation problem. These are
       different objectives, so the methods are not interchangeable.
@@ -2917,12 +3989,12 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       think PCA.
     </div>
 
-    <h2 id="part6">Part XV: Singular Value Decomposition</h2>
+    <h2 id="part6">Part XVII: Singular Value Decomposition</h2>
 
-    <h3>15.1 Singular Vectors and Singular Values</h3>
+    <h3>17.1 Singular Vectors and Singular Values</h3>
     <p>
-      For a matrix \(A\in\mathbb{R}^{m,n}\), unit vectors \(v\in\mathbb{R}^n\) and \(u\in\mathbb{R}^m\) are right and
-      left singular vectors with singular value \(\sigma>0\) if
+      For a matrix \(A\in\mathbb{R}^{m\times n}\), unit vectors \(v\in\mathbb{R}^n\) and \(u\in\mathbb{R}^m\) are right and
+      left singular vectors with singular value \(\sigma\gt 0\) if
     </p>
     <div class="proof">
       \[
@@ -2935,7 +4007,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       This means that the matrix maps input direction \(v\) to output direction \(u\), scaled by \(\sigma\).
     </p>
 
-    <h3>15.2 The Decomposition Theorem</h3>
+    <h3>17.2 The Decomposition Theorem</h3>
     <div class="proof">
       <strong>SVD theorem.</strong>
       If \(A\) has rank \(r\), then
@@ -2949,7 +4021,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       <strong>Proof.</strong> Consider \(A^\top A\), which is symmetric positive semidefinite. By the spectral
       theorem, there exists an orthonormal basis \(v_1,\dots,v_n\) of eigenvectors with corresponding eigenvalues
       \(\lambda_1,\dots,\lambda_n\ge 0\). Since \(A\) has rank \(r\), exactly \(r\) of these eigenvalues are
-      positive. Relabel so that \(\lambda_1,\dots,\lambda_r>0\). For each \(i\le r\), define
+      positive. Relabel so that \(\lambda_1,\dots,\lambda_r\gt 0\). For each \(i\le r\), define
       \[
       \sigma_i = \sqrt{\lambda_i},
       \qquad
@@ -2991,7 +4063,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       UDV^\top v_i = \sigma_i u_i = Av_i.
       \]
-      For each eigenvector \(v_j\) with \(j>r\), the eigenvalue is \(0\), so \(A^\top A v_j=0\), which implies
+      For each eigenvector \(v_j\) with \(j\gt r\), the eigenvalue is \(0\), so \(A^\top A v_j=0\), which implies
       \(\|Av_j\|_2^2 = v_j^\top A^\top A v_j = 0\), hence \(Av_j=0\). Also \(UDV^\top v_j=0\). Therefore
       \(A\) and \(UDV^\top\) agree on the basis \(v_1,\dots,v_n\), so they are equal. Thus
       \[
@@ -3008,8 +4080,35 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       corresponding nonzero eigenvalues. The left singular vectors are then recovered by
       \(u_i=\sigma_i^{-1}Av_i\).
     </p>
+    <div class="example">
+      <strong>Algorithm for computing the SVD in \(O(m^2n)\) when \(m\le n\).</strong>
+      Let \(A\in\mathbb{R}^{m\times n}\).
+      <ol>
+        <li>Form the symmetric matrix \(B=AA^\top\in\mathbb{R}^{m\times m}\).</li>
+        <li>Compute an orthonormal eigenbasis \(u_1,\dots,u_m\) of \(B\) with eigenvalues \(\lambda_1,\dots,\lambda_m\ge 0\).</li>
+        <li>Set \(\sigma_i=\sqrt{\lambda_i}\). These are the singular values of \(A\).</li>
+        <li>For each \(i\) with \(\sigma_i\gt 0\), define
+          \[
+          v_i=\sigma_i^{-1}A^\top u_i.
+          \]
+          Then \(Av_i=\sigma_i u_i\) and \(A^\top u_i=\sigma_i v_i\), so \((u_i,v_i,\sigma_i)\) is a singular triple.</li>
+        <li>If a full SVD is required, extend the nonzero singular vectors to orthonormal bases of \(\mathbb{R}^m\) and \(\mathbb{R}^n\).</li>
+      </ol>
+    </div>
+    <div class="proof">
+      <strong>Why the running time is \(O(m^2n)\).</strong>
+      Forming \(AA^\top\) costs \(O(m^2n)\), since each of the \(m^2\) entries is a dot product of length \(n\).
+      Diagonalizing the \(m\times m\) symmetric matrix \(B\) costs \(O(m^3)\). Recovering each right singular vector
+      \(v_i=\sigma_i^{-1}A^\top u_i\) costs \(O(mn)\), so recovering all \(m\) of them costs \(O(m^2n)\). Hence the
+      total cost is
+      \[
+      O(m^2n)+O(m^3)+O(m^2n).
+      \]
+      Because \(m\le n\), we have \(m^3\le m^2n\), so the total running time is \(O(m^2n)\). If \(m\gt n\), apply the
+      same method to \(A^\top\), compute the SVD of \(A^\top\) in \(O(n^2m)\), and transpose the result back.
+    </div>
 
-    <h3>15.3 Geometric Meaning</h3>
+    <h3>17.3 Geometric Meaning</h3>
     <p>
       SVD decomposes a matrix into three pieces:
       an orthogonal change of input coordinates, a diagonal scaling, and an orthogonal change of output coordinates.
@@ -3024,15 +4123,200 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \(x\mapsto Ax\). Everything orthogonal to those directions lies in the null space.
     </div>
 
-    <h3>15.4 Relation to PCA</h3>
+    <h3>17.4 Why SVD Matters: Three Standard Uses</h3>
+    <p>
+      In proofs and applications, SVD is useful because it reduces an arbitrary matrix to a diagonal one after
+      orthogonal changes of coordinates. Orthogonal matrices preserve Euclidean lengths and inner products, so many
+      questions about \(A\) become simple one-dimensional questions about its singular values.
+    </p>
+    <div class="proof">
+      <strong>Spectral facts to remember.</strong>
+      If
+      \[
+      A = UDV^\top,
+      \qquad
+      D=\operatorname{diag}(\sigma_1,\dots,\sigma_r,0,\dots,0),
+      \qquad
+      \sigma_1\ge \sigma_2\ge \cdots \ge \sigma_r\gt 0,
+      \]
+      then:
+      \[
+      \|A\|_{2\to 2}=\sigma_1,
+      \qquad
+      \|A\|_F^2=\sum_{i=1}^r \sigma_i^2,
+      \qquad
+      \operatorname{rank}(A)=|\{i:\sigma_i\gt 0\}|.
+      \]
+      Also, for every \(x\in\mathbb{R}^n\),
+      \[
+      \|Ax\|_2^2
+      =
+      \|DV^\top x\|_2^2
+      =
+      \sum_{i=1}^r \sigma_i^2 \langle v_i,x\rangle^2.
+      \]
+      This formula shows exactly how each right singular direction contributes to the output norm.
+    </div>
+    <div class="proof">
+      <strong>Proof that \(\|A\|_{2\to 2}=\sigma_1\).</strong>
+      For any unit vector \(x\), write \(y=V^\top x\). Since \(V\) is orthogonal, \(\|y\|_2=1\). Then
+      \[
+      \|Ax\|_2^2
+      =
+      \|UDV^\top x\|_2^2
+      =
+      \|Dy\|_2^2
+      =
+      \sum_{i=1}^r \sigma_i^2 y_i^2
+      \le
+      \sigma_1^2 \sum_{i=1}^r y_i^2
+      \le
+      \sigma_1^2.
+      \]
+      Hence \(\|A\|_{2\to 2}\le \sigma_1\). Equality is achieved by taking \(x=v_1\), since
+      \[
+      Av_1=\sigma_1 u_1
+      \quad\text{and therefore}\quad
+      \|Av_1\|_2=\sigma_1.
+      \]
+      So \(\|A\|_{2\to 2}=\sigma_1\).
+    </div>
+    <div class="example">
+      <strong>Use 1: maximize or bound \(\|Ax\|_2\).</strong>
+      If a problem asks for
+      \[
+      \max_{\|x\|_2=1}\|Ax\|_2,
+      \]
+      the answer is the largest singular value \(\sigma_1\), attained at the top right singular vector \(v_1\).
+      More generally, if you must show that \(\|Ax\|_2\le c\|x\|_2\) for all \(x\), it is enough to show
+      \(\sigma_1\le c\).
+    </div>
+    <div class="example">
+      <strong>Worked example.</strong>
+      Let
+      \[
+      A=\begin{pmatrix}3&amp;0\\0&amp;1\end{pmatrix}.
+      \]
+      The singular values are \(3\) and \(1\). Therefore
+      \[
+      \max_{\|x\|_2=1}\|Ax\|_2=3.
+      \]
+      The maximizing direction is \(x=e_1\). Geometrically, the unit circle is sent to an ellipse whose semiaxes have
+      lengths \(3\) and \(1\).
+    </div>
+    <div class="example">
+      <strong>Use 2: best low-rank approximation.</strong>
+      If
+      \[
+      A=\sum_{i=1}^r \sigma_i u_i v_i^\top,
+      \]
+      then the best rank-\(k\) approximation is
+      \[
+      A_k=\sum_{i=1}^k \sigma_i u_i v_i^\top.
+      \]
+      This is what you use when a problem asks for the closest rank-\(k\) matrix to \(A\), the smallest error after
+      discarding directions, or the optimal spectral/Frobenius compression.
+    </div>
+    <div class="proof">
+      <strong>Error formulas for truncation.</strong>
+      For the truncated SVD \(A_k\),
+      \[
+      \|A-A_k\|_{2\to 2}=\sigma_{k+1},
+      \qquad
+      \|A-A_k\|_F^2=\sum_{i\gt k}\sigma_i^2.
+      \]
+      So the singular values tell you exactly how much information is lost when you keep only the top \(k\)
+      directions.
+    </div>
+    <div class="example">
+      <strong>Worked example.</strong>
+      Suppose
+      \[
+      A=\sum_{i=1}^3 \sigma_i u_i v_i^\top
+      \qquad\text{with}\qquad
+      \sigma_1=10,\ \sigma_2=4,\ \sigma_3=1.
+      \]
+      Then the best rank-1 approximation is \(A_1=10u_1v_1^\top\). Its spectral error is
+      \[
+      \|A-A_1\|_{2\to 2}=4,
+      \]
+      and its Frobenius error is
+      \[
+      \|A-A_1\|_F=\sqrt{4^2+1^2}=\sqrt{17}.
+      \]
+      On an exam, this lets you answer low-rank approximation questions without reconstructing the full matrix.
+    </div>
+    <div class="example">
+      <strong>Use 3: solve least-squares and pseudoinverse problems.</strong>
+      If \(A=UDV^\top\) has nonzero singular values \(\sigma_1,\dots,\sigma_r\), define
+      \[
+      A^+ = V D^+ U^\top,
+      \]
+      where \(D^+\) has diagonal entries \(\sigma_i^{-1}\) on the nonzero singular values and \(0\) elsewhere. Then
+      \(x^\star=A^+b\) is the minimum-norm least-squares solution to
+      \[
+      \min_x \|Ax-b\|_2.
+      \]
+      This matters whenever the system is rectangular or singular.
+    </div>
+    <div class="proof">
+      <strong>Why the pseudoinverse solves least squares.</strong>
+      Write \(x=Vz\). Since \(U\) and \(V\) are orthogonal,
+      \[
+      \|Ax-b\|_2
+      =
+      \|UDV^\top x-b\|_2
+      =
+      \|Dz-U^\top b\|_2.
+      \]
+      Thus the minimization decouples coordinate-by-coordinate. For each \(i\le r\), the optimal choice is
+      \(z_i=(u_i^\top b)/\sigma_i\), and for \(i\gt r\) the residual cannot be affected by \(z_i\). The minimum-norm
+      choice sets those null-space coordinates to \(0\). Hence
+      \[
+      z=D^+U^\top b,
+      \qquad
+      x^\star = Vz = VD^+U^\top b = A^+b.
+      \]
+    </div>
+    <div class="example">
+      <strong>Worked example.</strong>
+      Let
+      \[
+      A=\begin{pmatrix}1&amp;0\\0&amp;0\end{pmatrix},
+      \qquad
+      b=\begin{pmatrix}2\\3\end{pmatrix}.
+      \]
+      Then the SVD has one nonzero singular value \(\sigma_1=1\), and
+      \[
+      A^+=\begin{pmatrix}1&amp;0\\0&amp;0\end{pmatrix}.
+      \]
+      Therefore
+      \[
+      x^\star=A^+b=\begin{pmatrix}2\\0\end{pmatrix}.
+      \]
+      Indeed,
+      \[
+      Ax^\star=\begin{pmatrix}2\\0\end{pmatrix},
+      \]
+      so the residual is \((0,-3)\), and among all least-squares minimizers this one has smallest Euclidean norm.
+    </div>
+    <div class="intuition">
+      <strong>Spectral viewpoint.</strong>
+      Eigenvalues describe invariant directions of a square operator. Singular values describe stretching behavior of
+      any matrix, square or rectangular. When a problem asks for the most amplified direction, the best rank-\(k\)
+      summary, the norm of a linear map, or the minimum-norm solution of a linear system, SVD is usually the right
+      tool because it turns the problem into diagonal arithmetic.
+    </div>
+
+    <h3>17.5 Relation to PCA</h3>
     <p>
       PCA is the statistical interpretation of SVD on a centered data matrix. The right singular vectors are the
       principal directions, and the singular values determine how much variance is captured along them.
     </p>
 
-    <h2 id="part7">Part XVI: Latent Semantic Indexing</h2>
+    <h2 id="part7">Part XVIII: Latent Semantic Indexing</h2>
 
-    <h3>16.1 Term-Document Matrices</h3>
+    <h3>18.1 Term-Document Matrices</h3>
     <p>
       Start with a term-document matrix \(A\), with entries given by counts or TF-IDF weights. In the raw
       bag-of-words model, retrieval is based on direct overlap of observed terms. This is brittle: related documents
@@ -3068,15 +4352,15 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       A=
       \begin{bmatrix}
-      1 & 0\\
-      1 & 0\\
-      0 & 2
+      1 &amp; 0\\
+      1 &amp; 0\\
+      0 &amp; 2
       \end{bmatrix}.
       \]
       Each column is a document vector; each row tracks one term across documents.
     </div>
 
-    <h3>16.2 Column Normalization and Cosine Similarity</h3>
+    <h3>18.2 Column Normalization and Cosine Similarity</h3>
     <p>
       Raw counts depend heavily on document length. A standard normalization rescales each document vector to have
       unit Euclidean norm. If \(a_j\) denotes the \(j\)-th column of \(A\), define
@@ -3107,9 +4391,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       A=
       \begin{bmatrix}
-      1 & 0\\
-      1 & 0\\
-      0 & 2
+      1 &amp; 0\\
+      1 &amp; 0\\
+      0 &amp; 2
       \end{bmatrix},
       \]
       the normalized columns are
@@ -3125,7 +4409,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       which correctly records that the documents share no vocabulary after preprocessing.
     </div>
 
-    <h3>16.3 The LSI Construction</h3>
+    <h3>18.3 The LSI Construction</h3>
     <p>
       Latent Semantic Indexing applies truncated SVD to the term-document matrix:
     </p>
@@ -3161,7 +4445,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       </ol>
     </div>
 
-    <h3>16.4 Why Low-Rank Structure Helps</h3>
+    <h3>18.4 Why Low-Rank Structure Helps</h3>
     <p>
       Truncation preserves the dominant co-occurrence patterns while discarding many small, vocabulary-specific
       fluctuations. Therefore, words and documents that behave similarly across the corpus can become close in the
@@ -3173,7 +4457,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       latent space.
     </div>
 
-    <h3>16.5 Interpreting the Singular Vectors</h3>
+    <h3>18.5 Interpreting the Singular Vectors</h3>
     <p>
       In a term-document matrix, the right singular vectors describe document-side directions and the left singular
       vectors describe term-side directions. Large coordinates in the first right singular vector indicate documents
@@ -3191,7 +4475,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       arbitrary, but the separation is meaningful.
     </div>
 
-    <h3>16.6 Relation to PCA and Its Limitation</h3>
+    <h3>18.6 Relation to PCA and Its Limitation</h3>
     <p>
       LSI is the text-retrieval analogue of the low-rank viewpoint behind PCA and SVD. The mathematical idea is the
       same: keep the dominant low-dimensional structure of a matrix. The limitation is also clear: LSI is linear and
@@ -3202,9 +4486,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       it remains a linear model rather than a contextual semantic model.
     </div>
 
-    <h2 id="part8">Part XVII: Matching Loss and Logistic Regression</h2>
+    <h2 id="part8">Part XIX: Matching Loss and Logistic Regression</h2>
 
-    <h3>17.1 Definition of the Matching Loss</h3>
+    <h3>19.1 Definition of the Matching Loss</h3>
     <p>
       Suppose
       \[
@@ -3227,7 +4511,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       model.
     </p>
 
-    <h3>17.2 Gradient and Comparison With Square Loss</h3>
+    <h3>19.2 Gradient and Comparison With Square Loss</h3>
     <div class="proof">
       <strong>Proposition.</strong>
       The gradient of the empirical matching loss is
@@ -3272,7 +4556,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       link functions.
     </div>
 
-    <h3>17.3 Convexity via the Hessian</h3>
+    <h3>19.3 Convexity via the Hessian</h3>
     <div class="proof">
       <strong>Theorem.</strong>
       If \(u\) is monotone increasing, then \(R_S^\ell(w)\) is convex in \(w\).
@@ -3303,7 +4587,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       increasing.
     </p>
 
-    <h3>17.4 Matching Loss Dominates the Squared Error in Expectation</h3>
+    <h3>19.4 Matching Loss Dominates the Squared Error in Expectation</h3>
     <p>
       Fix \(x\), and write
       \[
@@ -3322,7 +4606,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
     </p>
     <div class="proof">
       <strong>Theorem.</strong>
-      For every fixed \(x\),
+      Assume \(u\) is monotone increasing and \(1\)-Lipschitz. Then for every fixed \(x\),
       \[
       \mathbb{E}_{Y\sim D_x}[\ell(w;x,Y)]-\mathbb{E}_{Y\sim D_x}[\ell(w_\ast;x,Y)]
       \ge \frac12\big(u(w^\top x)-u(w_\ast^\top x)\big)^2.
@@ -3375,7 +4659,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       prediction error induced by the link function \(u\).
     </p>
 
-    <h3>17.5 Sigmoid Link and Logistic Loss</h3>
+    <h3>19.5 Sigmoid Link and Logistic Loss</h3>
     <p>
       Take
       \[
@@ -3432,7 +4716,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       The two formulas are the same loss written under different label encodings.
     </div>
 
-    <h3>17.6 Logistic Regression as Maximum Likelihood</h3>
+    <h3>19.6 Logistic Regression as Maximum Likelihood</h3>
     <p>
       If the labels are encoded as \(y_i\in\{\pm 1\}\) and one models
       \[
@@ -3480,7 +4764,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       convex in \(w\). This is the likelihood-theoretic reason one can efficiently optimize it with gradient methods.
     </p>
 
-    <h3>17.7 One-Hidden-Layer Neural Networks as a Nonlinear Logistic Model</h3>
+    <h3>19.7 One-Hidden-Layer Neural Networks as a Nonlinear Logistic Model</h3>
     <p>
       Logistic regression has the form
       \[
@@ -3499,9 +4783,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       optimization ceases to be convex even if the outermost link is still sigmoid.
     </p>
 
-    <h2 id="part9">Part XVIII: k-Means Clustering</h2>
+    <h2 id="part9">Part XX: k-Means Clustering</h2>
 
-    <h3>18.1 Objective and Alternating-Minimization Structure</h3>
+    <h3>20.1 Objective and Alternating-Minimization Structure</h3>
     <p>
       Given points \(x_1,\dots,x_m\in\mathbb R^d\) and a target number of clusters \(k\), the k-means objective is
       \[
@@ -3523,7 +4807,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       The theorem that k-means never increases its objective is a direct consequence of these two exact minimizations.
     </p>
 
-    <h3>18.2 Monotonicity of the k-Means Objective</h3>
+    <h3>20.2 Monotonicity of the k-Means Objective</h3>
     <div class="proof">
       <strong>Theorem.</strong>
       At every iteration of Lloyd's algorithm, the k-means objective \(\Phi\) does not increase.
@@ -3576,7 +4860,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       guarantees descent.
     </p>
 
-    <h3>18.3 Why k-Means Can Converge to a Bad Local Optimum</h3>
+    <h3>20.3 Why k-Means Can Converge to a Bad Local Optimum</h3>
     <p>
       The monotonicity theorem proves only local descent, not global optimality. A small explicit example shows the
       gap clearly.
@@ -3629,9 +4913,9 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       objective is nonconvex and admits poor local minima. Initialization matters.
     </p>
 
-    <h2 id="part10">Part XIX: PSD Approximation</h2>
+    <h2 id="part10">Part XXI: PSD Approximation</h2>
 
-    <h3>19.1 The Projection Problem</h3>
+    <h3>21.1 The Projection Problem</h3>
     <p>
       Let \(A\) be a symmetric matrix. We want the positive semidefinite matrix \(X\) closest to \(A\) in Frobenius
       norm:
@@ -3646,7 +4930,7 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       answer is obtained by clipping the negative eigenvalues.
     </p>
 
-    <h3>19.2 Best PSD Approximation by Eigenvalue Clipping</h3>
+    <h3>21.2 Best PSD Approximation by Eigenvalue Clipping</h3>
     <div class="proof">
       <strong>Theorem.</strong>
       The unique Frobenius-norm minimizer over PSD matrices is
@@ -3696,8 +4980,8 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       d_i=
       \begin{cases}
-      \lambda_i & \lambda_i\ge 0,\\
-      0 & \lambda_i<0.
+      \lambda_i &amp; \lambda_i\ge 0,\\
+      0 &amp; \lambda_i\lt 0.
       \end{cases}
       \]
       Therefore the unique minimizer is
@@ -3719,20 +5003,21 @@ This is a sum of logistic losses (one per example). The function is <strong>conv
       \[
       A=
       \begin{bmatrix}
-      2 & 0\\
-      0 & -3
+      2 &amp; 0\\
+      0 &amp; -3
       \end{bmatrix},
       \]
       then the nearest PSD matrix is
       \[
       X_\ast=
       \begin{bmatrix}
-      2 & 0\\
-      0 & 0
+      2 &amp; 0\\
+      0 &amp; 0
       \end{bmatrix}.
       \]
       The negative eigenvalue \(-3\) is clipped to \(0\), while the positive eigenvalue \(2\) is preserved.
     </div>
-  </main>
+
+      </main>
 </body>
 </html>
