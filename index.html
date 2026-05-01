@@ -672,6 +672,51 @@ So we “add 1” only when both subtrees have the same rank (a kind of symmetry
   to guarantee error at most \(\epsilon\) with confidence at least \(1-\delta\). This is exactly the tightest-fitting
   boundary-strip argument specialized to a disjunction of intervals on \(\mathbb{R}\).
 </p>
+<div class="example">
+  <strong>Concentric-circles PAC example (tightest-fitting learner).</strong>
+  Suppose the target concept is an annulus centered at the origin:
+  \[
+  h_{a,b}(x)=\mathbf{1}[a\le \|x\|_2 \le b]
+  \qquad\text{for }0\le a\le b.
+  \]
+  This is the two-dimensional analogue of a single interval. The natural consistent learner is: from the positive
+  examples, compute their radii \(r_i=\|x_i\|_2\), and output the <strong>smallest annulus</strong> centered at the
+  origin containing all observed positives:
+  \[
+  \widehat a=\min\{r_i:y_i=1\},
+  \qquad
+  \widehat b=\max\{r_i:y_i=1\}.
+  \]
+  Equivalently, reduce the problem to learning one interval on the line after mapping each point \(x\) to its radius
+  \(r=\|x\|_2\).
+</div>
+<div class="proof">
+  <strong>Tight PAC bound for concentric circles.</strong>
+  Choose two boundary bands inside the true annulus: one near the inner radius and one near the outer radius, each
+  having probability mass \(\epsilon/2\). If the sample contains at least one positive example in each band, then the
+  annulus returned by the tightest-fitting learner can miss at most \(\epsilon\) total probability mass of the true
+  target.
+</div>
+<p>
+  The probability of missing one fixed boundary band is
+  \[
+  \left(1-\frac{\epsilon}{2}\right)^m.
+  \]
+  By the union bound over the two boundary bands,
+  \[
+  \Pr[\text{failure}]
+  \le
+  2\left(1-\frac{\epsilon}{2}\right)^m
+  \le
+  2e^{-\epsilon m/2}.
+  \]
+  Therefore it suffices to choose
+  \[
+  m\ge \frac{2}{\epsilon}\ln\frac{2}{\delta}.
+  \]
+  So concentric-circle learning has the same tightest-fitting PAC bound as learning a single interval on the line,
+  because the only thing that matters is the one-dimensional radius coordinate.
+</p>
 <p><strong>Loss definitions (p.41):</strong> <strong>0/1 loss:</strong> \(\ell(h(x),y) = \mathbf{1}[h(x) \ne y]\). <strong>Empirical loss:</strong> \(\widehat{L}(h) = \frac{1}{m}\sum_i \ell(h(x_i),y_i)\). <strong>Population loss:</strong> \(L_D(h) = \mathbb{E}_{(x,y)\sim D}[\ell(h(x),y)]\).</p>
 
 <p><strong>Motivation.</strong> Move from mistake bounds on sequences to <em>generalization</em>: we draw a sample from a distribution \(D\) and want that, with high probability, our hypothesis has low error on \(D\) (not just on the sample).</p>
