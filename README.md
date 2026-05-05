@@ -1,5 +1,15 @@
-# CS 363H Notes
+# AkhilSamavedam.github.io
 
-This repository hosts the merged CS 363H study guide as a GitHub Pages site.
+This repository now acts as the root GitHub Pages site for `akhilsamavedam.github.io`.
 
-The published site entrypoint is `index.html`.
+## Structure
+
+- `index.html` is the homepage at the site root.
+- `CS-363H/index.html` contains the CS 363H notes site.
+- `FHE/index.html` contains the FHE subsite.
+
+## Published URLs
+
+- Root homepage: `https://akhilsamavedam.github.io/`
+- CS 363H notes: `https://akhilsamavedam.github.io/CS-363H/`
+- FHE subsite: `https://akhilsamavedam.github.io/FHE/`

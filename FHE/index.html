@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FHE Guide</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <link rel="stylesheet" href="../styles/notes.css">
+</head>
+<body>
+  <main>
+    <h1>Fully Homomorphic Encryption: A Beginner-to-Systems Guide</h1>
+    <p class="lede">
+      This page is written for the case where you know essentially nothing about fully homomorphic encryption. The goal
+      is to build the subject from the ground up: what encryption is, why computation on encrypted data is hard, how
+      FHE solves that problem, why noise and bootstrapping appear, how matrix arithmetic fits modern machine learning,
+      and why compiler systems such as HEIR matter for making the whole stack usable.
+    </p>
+    <p class="lede">
+      The emphasis is on conceptual structure. Each section introduces the object, explains why it matters, gives the
+      cleanest mental model available, and highlights the vocabulary you need in order to read papers and watch talks
+      without getting lost.
+    </p>
+
+    <div class="toc">
+      <strong>Contents</strong>
+      <ol>
+        <li><a href="#part1">Part I: Why We Need FHE</a></li>
+        <li><a href="#part2">Part II: Basic Cryptography Background</a></li>
+        <li><a href="#part3">Part III: The Core Idea of Homomorphic Encryption</a></li>
+        <li><a href="#part4">Part IV: Noise, Depth, and Bootstrapping</a></li>
+        <li><a href="#part5">Part V: Algebra and Linear Algebra Prerequisites</a></li>
+        <li><a href="#part6">Part VI: Major FHE Scheme Families</a></li>
+        <li><a href="#part7">Part VII: The Standard FHE Operations Vocabulary</a></li>
+        <li><a href="#part8">Part VIII: Packing, Slots, and SIMD</a></li>
+        <li><a href="#part9">Part IX: Matrix Arithmetic Under Encryption</a></li>
+        <li><a href="#part10">Part X: FHE for Machine Learning</a></li>
+        <li><a href="#part11">Part XI: Compiler Systems and HEIR</a></li>
+        <li><a href="#part12">Part XII: Hardware, TPU/GPU/CPU, and Systems Concerns</a></li>
+        <li><a href="#part13">Part XIII: How to Read the Referenced Papers and Videos</a></li>
+        <li><a href="#part14">Part XIV: A Practical Study Roadmap</a></li>
+      </ol>
+    </div>
+
+    <h2 id="part1">Part I: Why We Need FHE</h2>
+
+    <h3>1.1 The Basic Problem</h3>
+    <p>
+      Suppose you have sensitive data: medical records, financial transactions, private prompts, model inputs, or
+      enterprise documents. You want some untrusted server to compute on that data for you. Traditional encryption
+      protects the data <em>at rest</em> and <em>in transit</em>, but not <em>during computation</em>. The usual
+      workflow is:
+    </p>
+    <ul class="steps">
+      <li>Encrypt data locally.</li>
+      <li>Send ciphertext to the server.</li>
+      <li>Server must decrypt to compute.</li>
+      <li>So the server learns the plaintext.</li>
+    </ul>
+    <div class="defn">
+      <strong>Goal.</strong> We want an encryption scheme that allows useful computation directly on ciphertexts, so
+      that the server never sees the underlying plaintext.
+    </div>
+    <div class="intuition">
+      FHE is about removing the tension between <em>privacy</em> and <em>usefulness</em>. Ordinary encryption gives
+      privacy but blocks computation. Plain outsourced computation gives usefulness but loses privacy. FHE tries to get
+      both at once.
+    </div>
+
+    <h3>1.2 The Dream Output Condition</h3>
+    <p>
+      If the plaintext is \(m\), and \(f\) is some function we want to compute, we would like the server to transform
+      an encryption of \(m\) into an encryption of \(f(m)\), without ever learning \(m\) or \(f(m)\).
+    </p>
+    <div class="proof">
+      <strong>Correctness pattern.</strong> If \(c = \mathrm{Enc}(m)\), the server computes
+      \[
+      c' = \mathrm{Eval}(f, c),
+      \]
+      and then the client decrypts:
+      \[
+      \mathrm{Dec}(c') = f(m).
+      \]
+    </div>
+    <div class="example">
+      <strong>Example.</strong> A hospital could encrypt patient features, a cloud service could run a risk-scoring
+      model on the encrypted inputs, and only the hospital would learn the final risk score after decryption.
+    </div>
+
+    <h2 id="part2">Part II: Basic Cryptography Background</h2>
+
+    <h3>2.1 Plaintext, Ciphertext, Keys</h3>
+    <div class="defn">
+      <strong>Plaintext.</strong> The original readable data.
+    </div>
+    <div class="defn">
+      <strong>Ciphertext.</strong> The encrypted form of the data.
+    </div>
+    <div class="defn">
+      <strong>Secret key.</strong> The private object used to decrypt.
+    </div>
+    <div class="defn">
+      <strong>Public key.</strong> The public object others can use to encrypt to you.
+    </div>
+    <p>
+      In public-key encryption, anyone can encrypt to the owner of the secret key, but only the secret-key holder can
+      decrypt.
+    </p>
+
+    <h3>2.2 Symmetric vs Public-Key Encryption</h3>
+    <div class="example">
+      <strong>Symmetric-key encryption.</strong> The same shared secret key is used for encryption and decryption.
+    </div>
+    <div class="example">
+      <strong>Public-key encryption.</strong> Encryption uses a public key and decryption uses a secret key.
+    </div>
+    <div class="intuition">
+      FHE is usually discussed in the public-key setting because outsourcing computation naturally fits the model where
+      many parties encrypt data to one party that owns the decryption key.
+    </div>
+
+    <h3>2.3 What Security Usually Means</h3>
+    <p>
+      Encryption should hide the plaintext from anyone who does not have the secret key. In modern cryptography,
+      security is expressed as the inability of efficient adversaries to distinguish encryptions of chosen messages.
+    </p>
+    <div class="block">
+      <strong>Important mindset.</strong> In cryptography, "secure" does not mean "looks random to me." It means the
+      scheme resists mathematically formal attack models under explicit hardness assumptions.
+    </div>
+
+    <h2 id="part3">Part III: The Core Idea of Homomorphic Encryption</h2>
+
+    <h3>3.1 What "Homomorphic" Means</h3>
+    <div class="defn">
+      <strong>Homomorphism.</strong> A structure-preserving map. In this context, operations on ciphertexts correspond
+      to operations on plaintexts.
+    </div>
+    <p>
+      A toy additive example would satisfy:
+      \[
+      \mathrm{Dec}(c_1 \oplus c_2) = m_1 + m_2,
+      \]
+      whenever \(c_1 = \mathrm{Enc}(m_1)\) and \(c_2 = \mathrm{Enc}(m_2)\).
+    </p>
+
+    <h3>3.2 Partial, Somewhat, Leveled, and Fully Homomorphic Encryption</h3>
+    <div class="defn">
+      <strong>Partially homomorphic encryption.</strong> Supports only a restricted class of operations, such as just
+      addition or just multiplication.
+    </div>
+    <div class="defn">
+      <strong>Somewhat homomorphic encryption.</strong> Supports both addition and multiplication, but only for a
+      limited computation size before decryption fails.
+    </div>
+    <div class="defn">
+      <strong>Leveled FHE.</strong> Supports all circuits up to a chosen depth bound.
+    </div>
+    <div class="defn">
+      <strong>Fully homomorphic encryption.</strong> Supports arbitrary bounded computation in principle, because the
+      scheme can refresh ciphertexts as needed.
+    </div>
+    <div class="proof">
+      <strong>Key structural difference.</strong> The jump from "leveled" to "fully" is bootstrapping. A leveled
+      scheme can only survive a predetermined amount of multiplicative work. A fully homomorphic scheme can repeatedly
+      refresh the ciphertext and continue.
+    </div>
+
+    <h2 id="part4">Part IV: Noise, Depth, and Bootstrapping</h2>
+
+    <h3>4.1 Why Noise Appears</h3>
+    <p>
+      Modern lattice-based encryption schemes deliberately add randomness and error terms. This noise is not a bug; it
+      is central to security. But as homomorphic operations are applied, the noise grows.
+    </p>
+    <div class="defn">
+      <strong>Noise.</strong> A hidden error component inside a ciphertext that must stay within a certain range for
+      decryption to remain correct.
+    </div>
+    <div class="intuition">
+      Think of each ciphertext as carrying a "budget." Additions spend a little of it. Multiplications spend much more.
+      When the budget is exhausted, the ciphertext still exists, but it no longer decrypts reliably.
+    </div>
+
+    <h3>4.2 Multiplicative Depth</h3>
+    <div class="defn">
+      <strong>Multiplicative depth.</strong> The maximum number of multiplications on any path through the arithmetic
+      circuit being evaluated.
+    </div>
+    <div class="example">
+      <strong>Example.</strong> The expression \((ab)(cd)\) has multiplicative depth \(2\): first compute \(ab\) and
+      \(cd\), then multiply the results.
+    </div>
+    <div class="proof">
+      <strong>Why depth matters more than count.</strong> Many FHE costs and parameter choices are driven not by the
+      total number of operations but by how many multiplicative layers are stacked before a refresh.
+    </div>
+
+    <h3>4.3 Bootstrapping</h3>
+    <div class="defn">
+      <strong>Bootstrapping.</strong> A refresh procedure that reduces the effective noise of a ciphertext so that more
+      homomorphic computation can continue.
+    </div>
+    <p>
+      Historically, bootstrapping was the key conceptual breakthrough that made fully homomorphic encryption possible.
+    </p>
+    <div class="intuition">
+      The slogan is: <em>use encrypted computation to clean up an encrypted ciphertext</em>. It sounds circular at
+      first, but that circularity is exactly the genius of the idea.
+    </div>
+    <div class="block">
+      <strong>Practical consequence.</strong> When people say FHE is slow, a large part of that complaint is really
+      about the cost of high-depth operations and bootstrapping.
+    </div>
+
+    <h2 id="part5">Part V: Algebra and Linear Algebra Prerequisites</h2>
+
+    <h3>5.1 Why Cryptography Uses Strange Algebra</h3>
+    <p>
+      If you already know matrix multiplication, the biggest shift in cryptography is that we stop working over the
+      ordinary real numbers and start working in more rigid algebraic worlds. These worlds are chosen because they make
+      three things possible at once:
+    </p>
+    <ul class="steps">
+      <li>Arithmetic can be done efficiently by computers.</li>
+      <li>The structure is rich enough to encode useful computation.</li>
+      <li>Recovering hidden information appears computationally hard.</li>
+    </ul>
+    <div class="intuition">
+      In linear algebra, the algebraic setting is usually chosen because it models geometry or data. In cryptography,
+      the algebraic setting is often chosen because it creates a controlled mixture of <em>useful structure</em> and
+      <em>computational hardness</em>.
+    </div>
+
+    <h3>5.2 Modular Arithmetic</h3>
+    <p>
+      FHE schemes are built over arithmetic modulo one or more integers \(q\). To compute modulo \(q\) means we only
+      care about remainders after division by \(q\). Two numbers are treated as equivalent if they differ by a multiple
+      of \(q\).
+    </p>
+    <div class="defn">
+      <strong>Congruence modulo \(q\).</strong> We write
+      \[
+      a \equiv b \pmod q
+      \]
+      if \(q\) divides \(a-b\).
+    </div>
+    <div class="example">
+      <strong>Example.</strong> Modulo \(7\), one has \(5+4 \equiv 2 \pmod 7\), since \(9\) leaves remainder \(2\)
+      on division by \(7\).
+    </div>
+    <div class="example">
+      <strong>Another example.</strong> Modulo \(7\), one has \(6\cdot 6 = 36 \equiv 1 \pmod 7\).
+    </div>
+    <div class="intuition">
+      The phrase "wrap around" is accurate. On a clock, \(11+3=2\) if the clock has 12 hours. Modular arithmetic is
+      that same idea, except the modulus \(q\) can be very large and chosen for algorithmic reasons.
+    </div>
+
+    <h3>5.3 Fields vs Rings</h3>
+    <p>
+      Many students first meet modular arithmetic in settings where everything behaves nicely, especially when the
+      modulus is prime. Cryptography often works in settings that are slightly less nice but much more useful.
+    </p>
+    <div class="defn">
+      <strong>Field.</strong> A number system where you can add, subtract, multiply, and divide by every nonzero
+      element.
+    </div>
+    <div class="defn">
+      <strong>Ring.</strong> A set with addition and multiplication, where addition behaves like an abelian group and
+      multiplication distributes over addition, but division by nonzero elements is not generally available.
+    </div>
+    <div class="example">
+      <strong>Field example.</strong> \(\mathbb{Z}_7\) is a field because \(7\) is prime, so every nonzero residue has
+      a multiplicative inverse.
+    </div>
+    <div class="example">
+      <strong>Ring example.</strong> \(\mathbb{Z}_{8}\) is a ring but not a field. For example, \(2\) has no inverse
+      modulo \(8\).
+    </div>
+    <div class="intuition">
+      A ring is "less flexible" than a field, but that extra rigidity is not a problem for cryptography. In fact, many
+      useful cryptographic objects naturally live in rings.
+    </div>
+
+    <h3>5.4 What \(\mathbb{Z}_q\) Actually Means</h3>
+    <p>
+      The notation \(\mathbb{Z}_q\) means the integers modulo \(q\). Its elements are residue classes, which you can
+      picture concretely as the set
+      \[
+      \{0,1,2,\dots,q-1\}.
+      \]
+      Arithmetic is done as usual and then reduced modulo \(q\).
+    </p>
+    <div class="proof">
+      <strong>Why this matters.</strong> When a paper says that a vector has entries in \(\mathbb{Z}_q\), it means
+      each coordinate is only tracked modulo \(q\). So addition and multiplication happen coordinatewise with reduction
+      modulo \(q\).
+    </div>
+
+    <h3>5.5 Polynomials as Algebraic Containers</h3>
+    <p>
+      A polynomial is an expression like
+      \[
+      a_0 + a_1X + a_2X^2 + \cdots + a_dX^d.
+      \]
+      In FHE, the coefficients \(a_i\) often live in \(\mathbb{Z}_q\), so all coefficient arithmetic is done modulo
+      \(q\).
+    </p>
+    <div class="example">
+      <strong>Example.</strong> Over \(\mathbb{Z}_5\), the polynomials
+      \[
+      4 + 3X + X^2
+      \qquad\text{and}\qquad
+      2 + 4X
+      \]
+      add to
+      \[
+      (4+2) + (3+4)X + X^2 \equiv 1 + 2X + X^2 \pmod 5.
+      \]
+    </div>
+    <div class="intuition">
+      A polynomial ring lets you package many numbers into one algebraic object. That is one reason it is so natural
+      for batched encrypted computation.
+    </div>
+
+    <h3>5.6 Quotient Rings and Why \(X^N+1\) Appears</h3>
+    <p>
+      In RLWE-based cryptography, one often works in polynomial rings such as
+      \[
+      R_q = \mathbb{Z}_q[X]/(X^N+1).
+      \]
+      This notation can look intimidating, but the idea is manageable if you read it in two pieces:
+    </p>
+    <ul class="steps">
+      <li>\(\mathbb{Z}_q[X]\) means polynomials whose coefficients are in \(\mathbb{Z}_q\).</li>
+      <li>Dividing by \((X^N+1)\) means we identify polynomials that differ by a multiple of \(X^N+1\).</li>
+    </ul>
+    <div class="defn">
+      <strong>Quotient-ring rule.</strong> In \(R_q = \mathbb{Z}_q[X]/(X^N+1)\), we are allowed to replace
+      \(X^N\) by \(-1\).
+    </div>
+    <div class="example">
+      <strong>Example.</strong> If \(N=4\), then in this ring,
+      \[
+      X^4 \equiv -1,
+      \qquad
+      X^5 \equiv -X,
+      \qquad
+      X^6 \equiv -X^2.
+      \]
+      So every polynomial can be reduced to degree at most \(3\).
+    </div>
+    <div class="intuition">
+      This means the ring behaves like a fixed-size vector space of dimension \(N\), because every element can be
+      represented by its \(N\) coefficients on
+      \[
+      1, X, X^2, \dots, X^{N-1}.
+      \]
+      You can think of a ring element as an \(N\)-dimensional vector with a special multiplication rule.
+    </div>
+
+    <h3>5.7 Why Polynomial Multiplication Is Interesting</h3>
+    <p>
+      Addition of ring elements is just coefficientwise addition, so it looks like vector addition. Multiplication is
+      more interesting: multiplying polynomials mixes the coefficients together in a structured way.
+    </p>
+    <div class="example">
+      <strong>Example.</strong> If
+      \[
+      a(X)=a_0+a_1X
+      \qquad\text{and}\qquad
+      b(X)=b_0+b_1X,
+      \]
+      then
+      \[
+      a(X)b(X)=a_0b_0 + (a_0b_1+a_1b_0)X + a_1b_1X^2.
+      \]
+      The coefficients are being convolved together.
+    </div>
+    <div class="intuition">
+      This is one reason rings are so useful for cryptography: multiplication is richer than plain coordinatewise
+      multiplication, but still structured enough to implement efficiently.
+    </div>
+
+    <h3>5.8 Vectors, Matrices, and Ring Elements</h3>
+    <p>
+      Since the referenced material revolves around encrypted matrix arithmetic, you should know:
+    </p>
+    <ul class="steps">
+      <li>Vector addition and scalar multiplication.</li>
+      <li>Dot products.</li>
+      <li>Matrix addition.</li>
+      <li>Matrix multiplication.</li>
+      <li>Hadamard (entrywise) multiplication.</li>
+      <li>Transpose and conjugate transpose.</li>
+    </ul>
+    <div class="example">
+      <strong>Matrix multiplication formula.</strong> If \(A \in \mathbb{R}^{m \times n}\) and
+      \(B \in \mathbb{R}^{n \times p}\), then
+      \[
+      (AB)_{ij} = \sum_{k=1}^{n} A_{ik}B_{kj}.
+      \]
+    </div>
+    <div class="intuition">
+      The bridge to cryptography is that a ciphertext is often not "just a number." It is closer to a structured
+      algebraic object, sometimes best viewed as a small tuple of ring elements. The whole game is to make arithmetic on
+      those structured objects correspond to useful arithmetic on the underlying plaintext data.
+    </div>
+
+    <h3>5.9 The Minimum Lattice Intuition You Need</h3>
+    <p>
+      Most practical FHE is based on lattice problems such as LWE and RLWE. You do not need full lattice theory at the
+      beginning, but you should know the rough picture.
+    </p>
+    <div class="defn">
+      <strong>Lattice.</strong> A regular grid of points in high-dimensional space generated by integer combinations of
+      basis vectors.
+    </div>
+    <div class="example">
+      <strong>Simple 2D picture.</strong> In two dimensions, the ordinary integer grid
+      \[
+      \{(m,n): m,n \in \mathbb{Z}\}
+      \]
+      is a lattice.
+    </div>
+    <div class="intuition">
+      In high dimensions, some lattice problems appear computationally hard. Modern lattice cryptography hides secrets
+      inside linear-algebraic relationships disturbed by small noise.
+    </div>
+
+    <h3>5.10 LWE and RLWE at a High Level</h3>
+    <div class="defn">
+      <strong>LWE.</strong> Learning With Errors. Roughly: recover a hidden vector \(s\) from noisy linear equations.
+    </div>
+    <p>
+      A typical LWE sample looks like
+      \[
+      (\mathbf{a}, b)
+      \qquad\text{with}\qquad
+      b \approx \langle \mathbf{a}, \mathbf{s} \rangle + e \pmod q,
+      \]
+      where \(\mathbf{a}\) is public, \(\mathbf{s}\) is secret, and \(e\) is a small error term.
+    </p>
+    <div class="defn">
+      <strong>RLWE.</strong> Ring Learning With Errors. The same basic idea as LWE, but with vectors replaced by ring
+      elements and inner products replaced by ring multiplication.
+    </div>
+    <div class="proof">
+      <strong>Why the error term matters.</strong> Without noise, the equations would often be solvable by standard
+      linear algebra. The small noise is what turns an easy algebra problem into a hard cryptographic one.
+    </div>
+    <div class="intuition">
+      This is one of the biggest conceptual differences from ordinary math classes: in cryptography, adding a tiny
+      error is not sloppiness. It is often the source of security.
+    </div>
+
+    <h3>5.11 Why Ring-LWE Is Attractive for FHE</h3>
+    <ul class="steps">
+      <li>Ring elements can represent many coefficients at once.</li>
+      <li>Polynomial/ring multiplication can be implemented very efficiently.</li>
+      <li>The resulting ciphertexts support rich structured arithmetic.</li>
+      <li>The hardness assumptions are compatible with modern post-quantum cryptography.</li>
+    </ul>
+    <div class="block">
+      <strong>Takeaway.</strong> RLWE is popular not because mathematicians like complicated notation, but because it
+      gives an unusually strong combination of efficiency, algebraic structure, and believed security.
+    </div>
+
+    <h3>5.12 What You Actually Need to Remember</h3>
+    <div class="panel">
+      For now, the essentials are:
+      arithmetic is done modulo \(q\); ciphertext components often live in polynomial quotient rings; those ring
+      elements behave like fixed-length coefficient vectors with a special multiplication rule; and the security comes
+      from noisy high-dimensional algebraic problems such as LWE and RLWE.
+    </div>
+
+    <h2 id="part6">Part VI: Major FHE Scheme Families</h2>
+
+    <h3>6.1 BFV and BGV</h3>
+    <p>
+      BFV and BGV are classic lattice-based schemes designed for <em>exact</em> arithmetic over integers modulo some
+      value. They are useful when exact combinatorial or modular computation matters.
+    </p>
+    <div class="intuition">
+      If your problem really is discrete arithmetic, these schemes feel natural. If your problem looks like floating
+      point machine learning, they are often less natural than CKKS.
+    </div>
+
+    <h3>6.2 CKKS</h3>
+    <div class="defn">
+      <strong>CKKS.</strong> An approximate homomorphic encryption scheme designed for efficient arithmetic on vectors
+      of approximate real or complex values.
+    </div>
+    <p>
+      CKKS is widely used in private inference because neural-network workloads naturally tolerate approximation.
+    </p>
+    <div class="proof">
+      <strong>Why CKKS is popular in ML.</strong> Neural networks already operate with floating-point approximations,
+      quantization, and numerical tolerance. An approximate encryption scheme fits that culture much better than a
+      strictly exact one.
+    </div>
+
+    <h3>6.3 TFHE-Style Schemes</h3>
+    <p>
+      TFHE-family schemes are often optimized for Boolean or small-integer operations and for very fast bootstrapping at
+      the level of bits, gates, or lookup-table style operations.
+    </p>
+    <div class="intuition">
+      CKKS is often the “linear algebra” scheme. TFHE is often the “logic / programmable bootstrapping / LUT” scheme.
+      That is an oversimplification, but it is a useful first approximation.
+    </div>
+
+    <h3>6.4 Why New Matrix-Native Schemes Matter</h3>
+    <p>
+      The referenced matrix-arithmetic work is exciting because standard FHE schemes were not originally designed around
+      matrix multiplication as the first-class primitive, even though matrix multiplication dominates modern ML.
+    </p>
+    <div class="block">
+      <strong>Main systems insight.</strong> If the dominant workload is matrix arithmetic, then it can be worth
+        redesigning the cryptographic representation so that matrix operations become native rather than awkwardly
+        emulated.
+      </div>
+
+    <h3>6.5 Gentry-Lee and the GL Direction</h3>
+    <p>
+      The Gentry-Lee direction, often referred to informally as the <strong>GL scheme</strong> in recent talks and
+      summaries, is important because it pushes this matrix-native viewpoint much more aggressively than traditional
+      FHE pipelines.
+    </p>
+    <div class="defn">
+      <strong>High-level idea.</strong> Instead of treating matrix arithmetic as something that must be assembled out
+      of vector-slot tricks, the Gentry-Lee approach aims to make matrix operations themselves much more natural inside
+      the encrypted representation.
+    </div>
+    <p>
+      You should think of GL not merely as "another FHE scheme," but as part of a design shift. Traditional FHE
+      systems often begin with a ciphertext model optimized for scalar or vector arithmetic, and then build matrix
+      multiplication indirectly. The Gentry-Lee perspective asks whether the representation itself should be redesigned
+      around matrix workloads from the start.
+    </p>
+    <div class="intuition">
+      If modern private AI spends most of its time doing matrix multiplication, then a scheme built around matrix
+      arithmetic may be a better fit than a scheme that only becomes matrix-friendly after many layout conversions and
+      auxiliary operations.
+    </div>
+
+    <h3>6.6 How GL Differs from the Usual CKKS Mental Model</h3>
+    <p>
+      In the usual CKKS mental model, you pack many values into slots of a ciphertext, then spend substantial effort
+      arranging, rotating, summing, converting, and aligning those slots so the desired linear algebra happens.
+    </p>
+    <div class="example">
+      <strong>CKKS-style mindset.</strong> Start with packed vectors, then engineer matrix arithmetic by clever slot
+      layout, rotations, rescaling, and kernel design.
+    </div>
+    <div class="example">
+      <strong>GL-style mindset.</strong> Start by asking how matrices themselves should live inside ciphertexts so that
+      matrix operations are closer to native operations of the scheme.
+    </div>
+    <div class="proof">
+      <strong>Conceptual contrast.</strong> CKKS is excellent and broadly useful, but its native abstraction is not
+      "encrypted matrix" in the strongest sense. The GL direction is exciting because it tries to reduce that mismatch
+      between the algebraic object used by the scheme and the algebraic object used by the application.
+    </div>
+
+    <h3>6.7 What to Learn About GL Specifically</h3>
+    <p>
+      If you want to understand Gentry-Lee properly, these are the exact questions to keep in mind:
+    </p>
+    <ul class="steps">
+      <li>What is the plaintext object: scalar, vector, matrix, or batched family of matrices?</li>
+      <li>What operations are supported naturally: addition, matrix multiplication, Hadamard multiplication, transpose, rotations?</li>
+      <li>Which standard expensive steps are reduced or removed?</li>
+      <li>How is ciphertext-ciphertext matrix multiplication expressed inside the scheme?</li>
+      <li>How does the scheme interact with hardware designed for dense matrix arithmetic?</li>
+    </ul>
+    <div class="block">
+      <strong>Best beginner summary.</strong> Gentry-Lee matters because it asks whether fully homomorphic encryption
+      can be redesigned so that matrix arithmetic is not a painful special case, but a central native feature.
+    </div>
+
+    <h2 id="part7">Part VII: The Standard FHE Operations Vocabulary</h2>
+
+    <h3>7.1 Addition and Multiplication</h3>
+    <p>
+      Every practical FHE user needs to distinguish plaintext-ciphertext operations from ciphertext-ciphertext
+      operations. The latter are usually much more expensive.
+    </p>
+    <div class="example">
+      <strong>Cheaper pattern.</strong> Multiply an encrypted vector by a known public constant matrix.
+    </div>
+    <div class="example">
+      <strong>Harder pattern.</strong> Multiply an encrypted matrix by another encrypted matrix.
+    </div>
+
+    <h3>7.2 Relinearization</h3>
+    <div class="defn">
+      <strong>Relinearization.</strong> A post-multiplication procedure that compresses a larger ciphertext form back
+      into the standard ciphertext size.
+    </div>
+    <div class="intuition">
+      Multiplication often makes ciphertexts algebraically “fatter.” Relinearization shrinks them back into the normal
+      format, at a cost.
+    </div>
+
+    <h3>7.3 Key Switching and Rotation Keys</h3>
+    <div class="defn">
+      <strong>Key switching.</strong> Transforming a ciphertext under one effective key representation into a ciphertext
+      under another, without decryption.
+    </div>
+    <p>
+      Many operations such as rotations require auxiliary evaluation keys. These keys improve capability but increase
+      memory usage.
+    </p>
+
+    <h3>7.4 Modulus Switching and Rescaling</h3>
+    <p>
+      In exact schemes, modulus switching helps manage noise. In CKKS, rescaling additionally manages the scale attached
+      to approximate encodings after multiplication.
+    </p>
+    <div class="block">
+      <strong>Important distinction.</strong> Newcomers often mix up “noise management” and “precision management.” In
+      CKKS, rescaling is tied to both.
+    </div>
+
+    <h2 id="part8">Part VIII: Packing, Slots, and SIMD</h2>
+
+    <h3>8.1 Why Packing Exists</h3>
+    <p>
+      FHE would be nearly unusable if each ciphertext carried only one scalar. Modern schemes therefore pack many values
+      into one ciphertext and apply the same operation to all of them simultaneously.
+    </p>
+    <div class="defn">
+      <strong>Slots.</strong> The packed components of a ciphertext that can often be manipulated in SIMD style.
+    </div>
+    <div class="defn">
+      <strong>SIMD.</strong> Single instruction, multiple data: one operation acts on many packed values at once.
+    </div>
+
+    <h3>8.2 Rotations</h3>
+    <p>
+      Packed computation is powerful only if we can move data around inside the packed layout. Rotations shift slot
+      positions so that different values can interact.
+    </p>
+    <div class="example">
+      <strong>Example.</strong> A dot product can be implemented by elementwise multiplication followed by a sequence of
+      rotations and additions that sum the coordinates.
+    </div>
+
+    <h3>8.3 Layout Matters</h3>
+    <div class="intuition">
+      In FHE, performance often depends less on the abstract mathematics of the computation and more on how the data is
+      arranged in ciphertext slots. Good layout can save huge numbers of rotations and key-switches.
+    </div>
+
+    <h2 id="part9">Part IX: Matrix Arithmetic Under Encryption</h2>
+
+    <h3>9.1 Why Matrix Multiplication Is Central</h3>
+    <p>
+      Matrix multiplication is the computational engine of much of scientific computing and machine learning. If you can
+      do encrypted matrix multiplication efficiently, you unlock a large fraction of the useful workload.
+    </p>
+    <div class="proof">
+      <strong>Systems principle.</strong> Since neural networks are dominated by linear layers, attention projections,
+      and other tensor contractions, the efficiency of encrypted matrix multiplication often determines whether private
+      AI is viable at all.
+    </div>
+
+    <h3>9.2 Plaintext-Ciphertext vs Ciphertext-Ciphertext Matrix Multiplication</h3>
+    <div class="defn">
+      <strong>Plaintext-ciphertext multiplication.</strong> One matrix is public/known; the other is encrypted.
+    </div>
+    <div class="defn">
+      <strong>Ciphertext-ciphertext multiplication.</strong> Both matrices are encrypted.
+    </div>
+    <p>
+      The second problem is conceptually cleaner from a privacy perspective, but also much harder and more expensive.
+    </p>
+
+    <h3>9.3 Standard Difficulties</h3>
+    <ul class="steps">
+      <li>How should the matrix entries be packed into ciphertext slots?</li>
+      <li>How many rotations are needed to align multiplicands?</li>
+      <li>How many expensive ciphertext-ciphertext multiplications occur?</li>
+      <li>Do we need slot-to-coefficient conversion or ring switching?</li>
+      <li>How many evaluation keys are needed?</li>
+    </ul>
+    <div class="intuition">
+      A great deal of FHE research is really about finding a better answer to “how do I arrange the data so the costly
+      operations happen less often?”
+    </div>
+
+    <h3>9.4 Matrix-Native Viewpoints</h3>
+    <p>
+      The recent matrix-arithmetic material you referenced pushes the idea that encrypted objects should be able to
+      represent matrices in a more direct way, rather than forcing everything through vector-slot interpretations that
+      were not designed specifically for large matrix products.
+    </p>
+    <div class="block">
+      <strong>What to watch for in the papers.</strong> Look for claims like “matrix multiplication is reduced to a
+      small number of ciphertext multiplications,” “no slot-to-coefficient conversion,” or “native support for matrix
+      transforms.” Those are usually the headline structural gains.
+    </div>
+
+    <h3>9.5 Where Gentry-Lee Fits in the Matrix Story</h3>
+    <p>
+      This is the right place to connect the abstract Gentry-Lee idea to the actual matrix-arithmetic narrative.
+      Standard FHE systems often handle matrix multiplication by reducing it to a sequence of lower-level ciphertext
+      operations on packed vectors. Gentry-Lee is notable because it pushes toward a representation where matrix
+      multiplication itself is far more central.
+    </p>
+    <div class="intuition">
+      The phrase "matrix-native" is the key phrase to remember. It means the encrypted representation is being shaped
+      around the dominant workload instead of forcing the dominant workload to contort itself around an inherited
+      ciphertext format.
+    </div>
+    <div class="proof">
+      <strong>Why this matters for private AI.</strong> Deep learning workloads are dominated by matrix arithmetic. So
+      if GL reduces the number of awkward transformations, expensive conversions, or auxiliary manipulations needed to
+      do encrypted matrix products, then it can close a very real gap between cryptographic theory and useful machine
+      learning systems.
+    </div>
+    <div class="example">
+      <strong>What to compare when reading GL material.</strong> Always compare it against a standard CKKS-style
+      implementation and ask:
+    </div>
+    <ul class="steps">
+      <li>How many ciphertext multiplications are needed?</li>
+      <li>How many rotations or transpositions are needed?</li>
+      <li>Is slot-to-coefficient conversion avoided?</li>
+      <li>Are matrix transforms supported directly?</li>
+      <li>Does the structure map better to GPU or TPU execution?</li>
+    </ul>
+
+    <h2 id="part10">Part X: FHE for Machine Learning</h2>
+
+    <h3>10.1 Why ML Is a Natural Target</h3>
+    <p>
+      Many organizations want to run predictions on sensitive data without disclosing the inputs. This is exactly the
+      type of outsourced computation setting where FHE becomes compelling.
+    </p>
+
+    <h3>10.2 Linear Layers Are Easy Relative to Nonlinearities</h3>
+    <p>
+      Linear algebra is the strong side of many FHE pipelines. Nonlinear activation functions are harder because FHE
+      fundamentally supports addition and multiplication, not arbitrary transcendental functions.
+    </p>
+    <div class="example">
+      <strong>Common trick.</strong> Replace a hard activation like ReLU with a low-degree polynomial approximation
+      that can be evaluated homomorphically.
+    </div>
+
+    <h3>10.3 Inference vs Training</h3>
+    <div class="defn">
+      <strong>Private inference.</strong> Evaluate a trained model on encrypted inputs.
+    </div>
+    <div class="defn">
+      <strong>Private training.</strong> Update model parameters using encrypted or privacy-sensitive data.
+    </div>
+    <div class="intuition">
+      Private inference is already challenging but often feasible. Private training is much harder because it requires
+      many more rounds of high-depth arithmetic.
+    </div>
+
+    <h2 id="part11">Part XI: Compiler Systems and HEIR</h2>
+
+    <h3>11.1 Why FHE Needs Compilers</h3>
+    <p>
+      Writing efficient FHE code by hand is extremely difficult. The programmer must reason about arithmetic circuits,
+      depth, layouts, rotations, evaluation keys, approximation error, and backend-specific performance quirks.
+    </p>
+    <div class="defn">
+      <strong>FHE compiler.</strong> A system that transforms high-level code into an efficient homomorphic evaluation
+      program for a chosen scheme and backend.
+    </div>
+
+    <h3>11.2 Intermediate Representations</h3>
+    <div class="defn">
+      <strong>IR.</strong> An intermediate representation used inside a compiler to structure program transformations.
+    </div>
+    <div class="defn">
+      <strong>MLIR.</strong> A modular compiler infrastructure that supports many levels of abstraction through
+      domain-specific dialects.
+    </div>
+    <p>
+      HEIR is built around the idea that FHE compilation should live in a flexible IR ecosystem rather than inside one
+      monolithic hard-coded compiler.
+    </p>
+
+    <h3>11.3 What HEIR Tries to Solve</h3>
+    <ul class="steps">
+      <li>Translate high-level tensor or arithmetic programs into FHE-compatible forms.</li>
+      <li>Select a suitable FHE scheme and backend.</li>
+      <li>Choose layouts and kernels.</li>
+      <li>Manage vectorization and batching.</li>
+      <li>Lower the computation into backend-specific encrypted operations.</li>
+    </ul>
+    <div class="intuition">
+      You can think of HEIR as trying to do for FHE programming what mature compilers did for ordinary hardware
+      programming: make the high-level code less painful without giving up performance.
+    </div>
+
+    <h3>11.4 Terms You Should Recognize in HEIR Material</h3>
+    <div class="example">
+      <strong>Dialect.</strong> A family of IR operations for a particular abstraction level.
+    </div>
+    <div class="example">
+      <strong>Lowering.</strong> Transforming a higher-level representation into a lower-level one.
+    </div>
+    <div class="example">
+      <strong>Vectorization.</strong> Rewriting code so many values are processed in parallel.
+    </div>
+    <div class="example">
+      <strong>Layout optimization.</strong> Choosing how logical tensors map into ciphertext structures.
+    </div>
+    <div class="example">
+      <strong>Cost model.</strong> A quantitative rule for deciding which implementation strategy is likely cheaper.
+    </div>
+
+    <h2 id="part12">Part XII: Hardware, TPU/GPU/CPU, and Systems Concerns</h2>
+
+    <h3>12.1 Why Hardware Matters So Much</h3>
+    <p>
+      FHE is expensive not just because the mathematics is sophisticated, but because ciphertexts are large and the
+      arithmetic is heavy. Memory traffic, parallelism, and kernel quality matter enormously.
+    </p>
+
+    <h3>12.2 CPU vs GPU vs TPU</h3>
+    <div class="example">
+      <strong>CPU.</strong> Flexible, general-purpose, often easier for irregular control flow.
+    </div>
+    <div class="example">
+      <strong>GPU.</strong> Strong for massive parallel arithmetic on structured workloads.
+    </div>
+    <div class="example">
+      <strong>TPU.</strong> Strongly optimized for tensor and matrix-style workloads at scale.
+    </div>
+    <div class="intuition">
+      If encrypted computation can be reorganized so that it looks more like dense linear algebra, it becomes more
+      compatible with hardware originally built for AI acceleration.
+    </div>
+
+    <h3>12.3 Latency, Throughput, Memory</h3>
+    <p>
+      Three systems questions repeatedly appear:
+    </p>
+    <ul class="steps">
+      <li>How long does one encrypted computation take?</li>
+      <li>How many encrypted computations can run per unit time?</li>
+      <li>How much memory is consumed by ciphertexts and keys?</li>
+    </ul>
+    <div class="block">
+      <strong>Common beginner mistake.</strong> Looking only at runtime while ignoring key memory and communication
+      cost. In practice, evaluation keys can be huge.
+    </div>
+
+    <h2 id="part13">Part XIII: How to Read the Referenced Papers and Videos</h2>
+
+    <h3>13.1 Homomorphic Encryption Intro Material</h3>
+    <p>
+      When an intro video or document says "homomorphic encryption," make sure you extract these points:
+    </p>
+    <ul class="steps">
+      <li>What operations are supported?</li>
+      <li>What kind of data is represented?</li>
+      <li>What limits the computation?</li>
+      <li>Where does the overhead come from?</li>
+      <li>Why is the scheme still useful despite the overhead?</li>
+    </ul>
+
+    <h3>13.2 HEIR Material</h3>
+    <p>
+      When reading or watching HEIR material, focus less on syntax and more on architecture:
+    </p>
+    <ul class="steps">
+      <li>What input language is assumed?</li>
+      <li>What IR layers exist?</li>
+      <li>Where are layout decisions made?</li>
+      <li>How is the final backend selected?</li>
+      <li>What kinds of optimization passes are scheme-independent versus scheme-specific?</li>
+    </ul>
+
+    <h3>13.3 Matrix-Arithmetic Papers</h3>
+    <p>
+      When you read the matrix papers, ask the following every time:
+    </p>
+    <ul class="steps">
+      <li>What encrypted object is being represented?</li>
+      <li>What operations are native?</li>
+      <li>How many ciphertext multiplications are required?</li>
+      <li>How many rotations or key-switches are required?</li>
+      <li>What expensive operations are avoided?</li>
+      <li>Is the gain asymptotic, practical, or both?</li>
+      <li>Is the method better for large matrices, small matrices, or specific shapes?</li>
+    </ul>
+
+    <h2 id="part14">Part XIV: A Practical Study Roadmap</h2>
+
+    <h3>14.1 Stage 1: Learn the Language</h3>
+    <div class="panel">
+      First goal: become fluent in the words. You should be able to explain plaintext, ciphertext, public key, secret
+      key, homomorphic evaluation, noise, depth, bootstrapping, packing, rotation, relinearization, and CKKS out loud
+      without notes.
+    </div>
+
+    <h3>14.2 Stage 2: Learn the Structural Bottlenecks</h3>
+    <p>
+      Before reading advanced papers, make sure you can answer these:
+    </p>
+    <ul class="steps">
+      <li>Why does noise grow?</li>
+      <li>Why are multiplications harder than additions?</li>
+      <li>Why do layouts and rotations matter?</li>
+      <li>Why is matrix multiplication such an important benchmark?</li>
+      <li>Why are compilers needed in FHE?</li>
+    </ul>
+
+    <h3>14.3 Stage 3: Learn the Scheme Families</h3>
+    <p>
+      Build a rough map:
+    </p>
+    <ul class="steps">
+      <li>BFV/BGV: exact arithmetic.</li>
+      <li>CKKS: approximate numeric computing.</li>
+      <li>TFHE family: Boolean / small-integer / LUT-heavy workflows.</li>
+      <li>Matrix-native proposals: redesign around linear algebra itself.</li>
+    </ul>
+
+    <h3>14.4 Stage 4: Learn the Systems Stack</h3>
+    <p>
+      At that point, you are ready to understand the whole chain:
+    </p>
+    <ul class="steps">
+      <li>High-level model or program.</li>
+      <li>Compiler / IR / layout optimization.</li>
+      <li>Scheme-specific encrypted kernels.</li>
+      <li>Hardware backend.</li>
+      <li>Performance and memory tradeoffs.</li>
+    </ul>
+
+    <div class="proof">
+      <strong>Final takeaway.</strong> FHE is not just one cryptographic trick. It is a stack. The stack includes
+      cryptographic security assumptions, algebraic representations, noise management, packing strategies, compiler
+      transformations, matrix kernels, and hardware-aware execution. The recent work around encrypted matrix arithmetic
+      and HEIR is exciting precisely because it improves multiple layers of that stack at once.
+    </div>
+
+    <div class="block">
+      <strong>Navigation.</strong> This page is meant to be a home base for the FHE subsite. As you add more pages,
+      natural follow-ups would be <code>schemes.html</code>, <code>bootstrapping.html</code>,
+      <code>matrix-arithmetic.html</code>, and <code>heir.html</code>.
+      <div class="button-row">
+        <a class="button-link" href="../">Back To Home</a>
+        <a class="button-link" href="../CS-363H/">Open CS 363H</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
