@@ -93,6 +93,28 @@
       model on the encrypted inputs, and only the hospital would learn the final risk score after decryption.
     </div>
 
+    <h3>1.3 Four Practical Caveats</h3>
+    <p>
+      The slogan "run programs on encrypted data" is true, but in practice there are four important caveats that shape
+      the entire field.
+    </p>
+    <ul class="steps">
+      <li>FHE is much slower than ordinary computation.</li>
+      <li>Noise limits the amount of computation unless special techniques are used.</li>
+      <li>Control flow cannot depend on secret data in the usual way.</li>
+      <li>Ciphertexts and evaluation keys can be very large.</li>
+    </ul>
+    <div class="proof">
+      <strong>Control-flow consequence.</strong> If a secret input determined whether the program took a short branch or
+      a long branch, the runtime itself could leak information about the secret. So in secure FHE programming, one
+      often computes all branches and then selects the right result, or one works with fixed upper bounds for loops and
+      iterations.
+    </div>
+    <div class="intuition">
+      This is why FHE programs often feel less like ordinary application code and more like carefully scheduled kernels:
+      the shape of the computation has to be mostly fixed in advance.
+    </div>
+
     <h2 id="part2">Part II: Basic Cryptography Background</h2>
 
     <h3>2.1 Plaintext, Ciphertext, Keys</h3>
@@ -389,6 +411,288 @@
       multiplication, but still structured enough to implement efficiently.
     </div>
 
+    <h3>5.7A DFT and NTT: The Idea</h3>
+    <p>
+      Polynomial multiplication by the schoolbook rule costs quadratic work in the degree. That is too expensive for
+      the large polynomial rings used in RLWE. The main speedup comes from converting multiplication into pointwise
+      multiplication in another domain.
+    </p>
+    <div class="defn">
+      <strong>DFT viewpoint.</strong> Convolution in coefficient space becomes pointwise multiplication in evaluation
+      space.
+    </div>
+    <div class="example">
+      <strong>Signal-processing analogy.</strong> If the coefficient vectors of two polynomials are treated like
+      signals, then polynomial multiplication is a structured convolution. Fourier transforms diagonalize convolution.
+    </div>
+
+    <h3>5.7B DFT and NTT: The Math</h3>
+    <p>
+      If
+      \[
+      a(X)=\sum_{i=0}^{N-1} a_iX^i,\qquad b(X)=\sum_{i=0}^{N-1} b_iX^i,
+      \]
+      then the coefficient vector of the product is a convolution of the coefficient vectors of \(a\) and \(b\).
+      Over the complex numbers, the discrete Fourier transform gives
+      \[
+      \widehat{a \ast b} = \widehat{a}\cdot \widehat{b},
+      \]
+      where the multiplication on the right is pointwise.
+    </p>
+    <div class="proof">
+      <strong>NTT version.</strong> The number-theoretic transform is the finite-field or modular-arithmetic analogue
+      of the DFT. Instead of using complex roots of unity, it uses roots of unity inside \(\mathbb{Z}_q\) or a related
+      ring. That makes it suitable for cryptographic arithmetic.
+    </div>
+    <div class="intuition">
+      The DFT and NTT do the same structural job. The DFT lives over complex numbers and is great for intuition. The
+      NTT lives over modular rings and is what many real FHE implementations use.
+    </div>
+
+    <h3>5.7C DFT and NTT: Implementation Shape</h3>
+    <p>
+      The implementation pattern is:
+    </p>
+    <ul class="steps">
+      <li>transform both coefficient vectors into an evaluation domain,</li>
+      <li>multiply them pointwise,</li>
+      <li>inverse-transform back to coefficient form,</li>
+      <li>apply the appropriate ring reduction.</li>
+    </ul>
+    <pre><code>def poly_mul_via_transform(a, b):
+    A = transform(a)          # DFT or NTT
+    B = transform(b)
+    C = A * B                 # pointwise multiply
+    c = inverse_transform(C)
+    return ring_reduce(c)</code></pre>
+    <div class="example">
+      <strong>Why hardware people care.</strong> This is exactly why NTT engines matter so much in arithmetic FHE
+      accelerators. A large fraction of the total runtime is polynomial multiplication, and a large fraction of that is
+      transform work.
+    </div>
+
+    <h3>5.7D A JAX-Style DFT Toy Example</h3>
+    <p>
+      For intuition, here is the complex-number version using FFT machinery:
+    </p>
+    <pre><code>import jax.numpy as jnp
+
+def poly_mul_fft(a, b):
+    size = a.shape[0] + b.shape[0] - 1
+    n = 1
+    while n &lt; size:
+        n *= 2
+    A = jnp.fft.fft(a, n=n)
+    B = jnp.fft.fft(b, n=n)
+    C = A * B
+    c = jnp.fft.ifft(C)
+    return jnp.rint(jnp.real(c[:size]))</code></pre>
+    <div class="block">
+      <strong>Important distinction.</strong> This FFT example is for intuition only. Real NTT-based crypto code
+      avoids floating point and instead works with modular roots of unity so the arithmetic stays exact in the chosen
+      ring.
+    </div>
+
+    <h3>5.7H A Tiny DFT Walkthrough by Hand</h3>
+    <p>
+      Let us make the transform story concrete. Take the coefficient vectors
+      \[
+      a = (1,2),\qquad b=(3,4).
+      \]
+      Interpreting these as degree-1 polynomials gives
+      \[
+      a(X)=1+2X,\qquad b(X)=3+4X.
+      \]
+    </p>
+    <div class="example">
+      <strong>Plain multiplication.</strong>
+      \[
+      (1+2X)(3+4X)=3+10X+8X^2.
+      \]
+      So the coefficient vector of the product is \((3,10,8)\).
+    </div>
+    <p>
+      Now pad to length \(4\) and evaluate with a 4-point DFT. Let \(\omega = i\), so
+      \[
+      \omega^0 = 1,\quad \omega^1 = i,\quad \omega^2 = -1,\quad \omega^3 = -i.
+      \]
+      Then
+      \[
+      \widehat{a} = (a(1), a(i), a(-1), a(-i)) = (3, 1+2i, -1, 1-2i),
+      \]
+      and similarly
+      \[
+      \widehat{b} = (7, 3+4i, -1, 3-4i).
+      \]
+    </p>
+    <div class="proof">
+      <strong>Pointwise multiply.</strong>
+      \[
+      \widehat{c} = \widehat{a}\cdot \widehat{b}
+      =
+      (21,\; (1+2i)(3+4i),\; 1,\; (1-2i)(3-4i)).
+      \]
+      After inverse DFT, this returns the coefficient vector \((3,10,8,0)\), whose nonzero part is exactly the
+      polynomial product.
+    </div>
+    <div class="intuition">
+      The DFT is not doing mysterious magic. It is just moving from coefficient coordinates into a coordinate system
+      where convolution becomes pointwise multiplication.
+    </div>
+
+    <h3>5.7I A Tiny NTT Walkthrough by Hand</h3>
+    <p>
+      Now do the same idea over modular arithmetic. Take modulus \(q=17\) and length \(4\). The element
+      \[
+      \omega = 4
+      \]
+      is a primitive 4th root of unity modulo 17, because
+      \[
+      4^2 = 16 \equiv -1 \pmod{17},
+      \qquad
+      4^4 \equiv 1 \pmod{17}.
+      \]
+    </p>
+    <p>
+      Reuse
+      \[
+      a=(1,2,0,0),\qquad b=(3,4,0,0).
+      \]
+      The 4-point NTT evaluates at powers of \(\omega\):
+      \[
+      1,\omega,\omega^2,\omega^3 = 1,4,16,13.
+      \]
+      So
+      \[
+      \widehat{a} = (a(1), a(4), a(16), a(13)) = (3,9,16,10) \pmod{17},
+      \]
+      and
+      \[
+      \widehat{b} = (7,2,16,4) \pmod{17}.
+      \]
+    </p>
+    <div class="proof">
+      <strong>Pointwise multiply mod 17.</strong>
+      \[
+      \widehat{c}
+      =
+      (3\cdot 7,\; 9\cdot 2,\; 16\cdot 16,\; 10\cdot 4)
+      \equiv
+      (4,1,1,6)\pmod{17}.
+      \]
+      Applying the inverse NTT recovers
+      \[
+      c=(3,10,8,0)\pmod{17},
+      \]
+      which again matches the polynomial product coefficients.
+    </div>
+    <div class="intuition">
+      This is the same structure as the DFT, but now every operation stays inside modular arithmetic. That is why NTTs
+      are so important for real cryptographic implementations.
+    </div>
+
+    <h3>5.7J Negacyclic Convolution and \(x^N + 1\)</h3>
+    <p>
+      Standard convolution computes multiplication in an ordinary polynomial ring. FHE often needs
+      <em>negacyclic</em> convolution because the working ring is
+      \[
+      \mathbb{Z}_q[x]/(x^N+1).
+      \]
+      In that ring,
+      \[
+      x^N \equiv -1,
+      \qquad
+      x^{N+t} \equiv -x^t.
+      \]
+    </p>
+    <div class="example">
+      <strong>Example.</strong> With \(N=4\),
+      \[
+      x^4 \equiv -1,\quad x^5 \equiv -x,\quad x^6 \equiv -x^2.
+      \]
+      So when high-degree terms wrap around, they come back with a sign flip.
+    </div>
+    <p>
+      This is exactly why the reduction step after convolution is different from ordinary cyclic convolution. In plain
+      language:
+    </p>
+    <ul class="steps">
+      <li>ordinary cyclic convolution wraps coefficients back around unchanged,</li>
+      <li>negacyclic convolution wraps them back around with a minus sign.</li>
+    </ul>
+    <div class="block">
+      <strong>Implementation consequence.</strong> Real NTT-based negacyclic multiplication is often implemented using a
+      transform specially chosen for the \(x^N+1\) modulus, so the sign-flip behavior is built into the transform
+      machinery rather than handled by slow ad hoc postprocessing.
+    </div>
+
+    <h3>5.7E Residue Number Systems (RNS)</h3>
+    <p>
+      Arithmetic FHE often needs numbers too large for a single machine word. Rather than using slow multi-precision
+      arithmetic everywhere, implementations frequently decompose a large modulus into many smaller coprime moduli.
+    </p>
+    <div class="defn">
+      <strong>Residue number system.</strong> Represent a large value \(x\) by its residues
+      \[
+      (x \bmod q_1,\dots,x \bmod q_k)
+      \]
+      for pairwise coprime moduli \(q_i\).
+    </div>
+    <div class="proof">
+      <strong>Why it works.</strong> By the Chinese Remainder Theorem, if the product \(Q = q_1\cdots q_k\) is large
+      enough, then the residue tuple determines the original value modulo \(Q\). Addition and multiplication can be
+      done entrywise on the residues.
+    </div>
+    <pre><code>def rns_add(x_residues, y_residues, moduli):
+    return [(x + y) % q for (x, y, q) in zip(x_residues, y_residues, moduli)]
+
+def rns_mul(x_residues, y_residues, moduli):
+    return [(x * y) % q for (x, y, q) in zip(x_residues, y_residues, moduli)]</code></pre>
+    <div class="intuition">
+      RNS turns one big hard arithmetic problem into many smaller parallel arithmetic problems. That is exactly the kind
+      of structure hardware likes.
+    </div>
+
+    <h3>5.7F Double-CRT and Evaluation Encodings</h3>
+    <p>
+      Another major idea from the article is that arithmetic FHE often uses <em>two</em> CRT-like decompositions at
+      once.
+    </p>
+    <div class="defn">
+      <strong>Double-CRT.</strong> One CRT decomposition handles large coefficient moduli via RNS, while another
+      transform-based decomposition represents a polynomial by its evaluations at selected roots of unity.
+    </div>
+    <p>
+      The evaluation-domain viewpoint is closely tied to DFT/NTT thinking. Instead of storing the plaintext or
+      ciphertext only by polynomial coefficients, one also works with its values at special points. This makes some
+      operations, especially multiplication, much easier.
+    </p>
+    <div class="intuition">
+      Coefficient domain is where the polynomial is "written down." Evaluation domain is where multiplication becomes
+      pointwise. Double-CRT says we also decompose the coefficient modulus itself into many small modular channels.
+    </div>
+
+    <h3>5.7G Gadget Decomposition</h3>
+    <p>
+      Gadget decomposition is an implementation trick that appears all over FHE, especially in key switching and
+      relinearization. The idea is to rewrite large values in a digit basis so that one side of a multiplication is
+      broken into small pieces.
+    </p>
+    <div class="example">
+      <strong>Bit decomposition.</strong> One can write
+      \[
+      b = \sum_{i=0}^{\ell-1} b_i 2^i,\qquad b_i \in \{0,1\}.
+      \]
+      Then
+      \[
+      ab = \sum_{i=0}^{\ell-1} a\,b_i\,2^i.
+      \]
+    </div>
+    <div class="proof">
+      <strong>Why it helps.</strong> If noise growth is asymmetric, it can be cheaper to keep one factor small and
+      digit-decomposed, while absorbing the powers of the base elsewhere using precomputed key material.
+    </div>
+
     <h3>5.8 Vectors, Matrices, and Ring Elements</h3>
     <p>
       Since the referenced material revolves around encrypted matrix arithmetic, you should know:
@@ -481,6 +785,128 @@
       from noisy high-dimensional algebraic problems such as LWE and RLWE.
     </div>
 
+    <h3>5.13 Constant-Time Arithmetic</h3>
+    <p>
+      Once you move from mathematical definitions to real cryptographic software, one more issue appears immediately:
+      even if the algebra is correct, the implementation can still leak information if its control flow or timing
+      depends on secret data.
+    </p>
+    <div class="defn">
+      <strong>Constant-time arithmetic.</strong> An implementation style in which the sequence of low-level operations
+      is designed not to depend on secret values in a way that leaks information through timing or related side
+      channels.
+    </div>
+    <div class="intuition">
+      The goal is not literally "every input takes exactly the same number of nanoseconds" in all real hardware
+      circumstances. The goal is: do not branch, index memory, or otherwise vary execution in secret-dependent ways
+      that give an attacker information about hidden data.
+    </div>
+    <div class="proof">
+      <strong>Why this matters.</strong> Suppose an implementation does one thing when a secret coefficient is large
+      and another when it is small. Then an attacker may be able to infer information about that coefficient by
+      observing timing, cache behavior, power draw, or other side effects. This is a classic side-channel problem.
+    </div>
+
+    <h3>5.14 Why Ring Arithmetic Is a Good Fit for Branch-Free Code</h3>
+    <p>
+      Addition, subtraction, and multiplication in rings are algebraic operations, so they are naturally close to
+      straight-line arithmetic code. That is one reason lattice-crypto kernels often vectorize well.
+    </p>
+    <div class="example">
+      <strong>Coefficientwise addition.</strong> If
+      \[
+      a=(a_0,\dots,a_{N-1}),\qquad b=(b_0,\dots,b_{N-1}),
+      \]
+      then
+      \[
+      a+b=(a_0+b_0,\dots,a_{N-1}+b_{N-1}),
+      \]
+      followed by reduction modulo \(q\). This is naturally a uniform coordinatewise loop.
+    </div>
+    <div class="intuition">
+      A lot of the implementation challenge is not the ring operation itself, but how to do reduction, normalization,
+      and transforms without secret-dependent branching.
+    </div>
+
+    <h3>5.15 Branchless Modular Reduction</h3>
+    <p>
+      The most common tiny branching hazard appears after modular arithmetic. Suppose we want a value reduced into the
+      standard range \(\{0,1,\dots,q-1\}\). A beginner might write:
+    </p>
+    <pre><code>x = x + y
+if x &gt;= q:
+    x = x - q</code></pre>
+    <p>
+      That branch can be problematic if \(x\) depends on secret data. The branch-free idea is to compute both pieces
+      arithmetically and use a mask rather than a control-flow split.
+    </p>
+    <div class="example">
+      <strong>Branchless idea.</strong> Compute
+      \[
+      t = x-q,
+      \]
+      then use a mask derived from the sign of \(t\) to decide whether to keep \(x\) or \(t\), without an
+      <code>if</code> statement.
+    </div>
+    <pre><code>def reduce_once_branchless(x, q):
+    t = x - q
+    mask = (t &gt;&gt; 63) &amp; 1        # schematic signed-mask idea
+    return t + mask * q</code></pre>
+    <div class="intuition">
+      The exact bit trick depends on representation and language, but the pattern is always the same: use arithmetic or
+      bitwise logic to simulate the choice instead of branching on a secret-dependent condition.
+    </div>
+
+    <h3>5.16 Branchless Selection as a General Pattern</h3>
+    <p>
+      At a higher level, branchless code often relies on the identity
+      \[
+      \text{select}(b,u,v) = b\,u + (1-b)\,v
+      \]
+      when \(b\in\{0,1\}\), or on an equivalent bitmask formula.
+    </p>
+    <div class="example">
+      <strong>Mask formula.</strong> If <code>mask</code> is all ones when a condition is true and all zeros
+      otherwise, then one can write
+      \[
+      (u \mathbin{\&} \text{mask}) \;|\; (v \mathbin{\&} \sim\text{mask})
+      \]
+      instead of branching between \(u\) and \(v\).
+    </div>
+    <div class="proof">
+      <strong>Cryptographic lesson.</strong> This is why people say "avoid secret-dependent branches." The replacement
+      is not "do nothing"; the replacement is to encode the choice into arithmetic or bit operations.
+    </div>
+
+    <h3>5.17 JAX-Flavored Toy Example</h3>
+    <p>
+      In high-level array code, the same conceptual idea can be written with selection primitives rather than Python
+      control flow:
+    </p>
+    <pre><code>import jax.numpy as jnp
+
+def reduce_once_jax(x, q):
+    t = x - q
+    return jnp.where(t &lt; 0, x, t)</code></pre>
+    <div class="example">
+      <strong>Important caveat.</strong> This illustrates the <em>branchless mathematical shape</em>, but high-level
+      JAX code is not by itself a proof of constant-time behavior. Constant-time guarantees are a lower-level systems
+      property, not just a source-code style choice.
+    </div>
+
+    <h3>5.18 Why This Matters for FHE and RLWE Code</h3>
+    <ul class="steps">
+      <li>Modular arithmetic appears everywhere in lattice cryptography.</li>
+      <li>Polynomial-ring arithmetic is built from huge numbers of coefficient operations.</li>
+      <li>Branchless kernels vectorize better and map better to hardware.</li>
+      <li>Secret-dependent branches can leak information through timing and cache effects.</li>
+    </ul>
+    <div class="block">
+      <strong>Takeaway.</strong> Yes, ring operations can often be implemented without branching on secret data, and in
+      serious cryptographic code they often should be. This is one of the places where algebra, security, and systems
+      engineering all meet directly.
+    </div>
+
     <h2 id="part6">Part VI: Major FHE Scheme Families</h2>
 
     <h3>6.1 BFV and BGV</h3>
@@ -491,6 +917,47 @@
     <div class="intuition">
       If your problem really is discrete arithmetic, these schemes feel natural. If your problem looks like floating
       point machine learning, they are often less natural than CKKS.
+    </div>
+
+    <h3>6.1A BFV/BGV and the Key-Basis View</h3>
+    <p>
+      A very useful implementation-level picture from the article is to think of a ciphertext as living in a basis
+      built from powers of the secret key.
+    </p>
+    <div class="proof">
+      <strong>Degree-1 basis.</strong> A ciphertext is often written as a pair \((c_0,c_1)\), and decryption begins by
+      evaluating
+      \[
+      c_0 + c_1 s,
+      \]
+      where \(s\) is the secret key. So the ciphertext naturally lives in the basis \((1,s)\).
+    </div>
+    <p>
+      When multiplying \((c_0,c_1)\) and \((b_0,b_1)\), the product becomes
+      \[
+      (c_0b_0,\; c_0b_1 + c_1b_0,\; c_1b_1),
+      \]
+      which now lives in the basis \((1,s,s^2)\).
+    </p>
+    <div class="defn">
+      <strong>Relinearization viewpoint.</strong> Relinearization is the process of converting the degree-2 key basis
+      back to the degree-1 basis, typically using special key-switching material involving an encryption of \(s^2\).
+    </div>
+
+    <h3>6.1B Levels, Modulus Switching, and "More Primes"</h3>
+    <p>
+      Another key point emphasized in the article is that leveled arithmetic FHE often carries a chain of moduli
+      \[
+      Q_0 \mid Q_1 \mid \cdots \mid Q_L.
+      \]
+      A ciphertext begins at a large top modulus and is gradually switched downward after multiplications.
+    </p>
+    <div class="intuition">
+      Each multiplication consumes one "level." Modulus switching reduces both the coefficient modulus and the noise
+      scale, letting a deep circuit survive without bootstrapping.
+    </div>
+    <div class="block">
+      <strong>Engineering slogan.</strong> Got multiplicative depth? You need more primes.
     </div>
 
     <h3>6.2 CKKS</h3>
@@ -507,14 +974,75 @@
       strictly exact one.
     </div>
 
+    <h3>6.2A CKKS Scales and Precision</h3>
+    <p>
+      The article also stresses an important usability point: CKKS users do not only track noise, but also precision
+      and scale.
+    </p>
+    <div class="defn">
+      <strong>Scale.</strong> A factor attached to a CKKS ciphertext that determines how the encoded approximate real
+      values are represented internally.
+    </div>
+    <p>
+      After multiplication, scales multiply too, so CKKS applies a rescaling operation to bring the representation back
+      under control. This also drops some low-order precision.
+    </p>
+    <div class="intuition">
+      In BGV/BFV you worry mainly about correctness and noise. In CKKS you also worry about numerical analysis.
+    </div>
+
     <h3>6.3 TFHE-Style Schemes</h3>
     <p>
       TFHE-family schemes are often optimized for Boolean or small-integer operations and for very fast bootstrapping at
       the level of bits, gates, or lookup-table style operations.
     </p>
     <div class="intuition">
-      CKKS is often the “linear algebra” scheme. TFHE is often the “logic / programmable bootstrapping / LUT” scheme.
+      CKKS is often the "linear algebra" scheme. TFHE is often the "logic / programmable bootstrapping / LUT" scheme.
       That is an oversimplification, but it is a useful first approximation.
+    </div>
+
+    <h3>6.3A CGGI / TFHE and Programmable Bootstrapping</h3>
+    <p>
+      The article's treatment of CGGI adds an important idea we did not spell out enough before: bootstrapping can do
+      extra work besides refreshing noise.
+    </p>
+    <div class="defn">
+      <strong>Programmable bootstrapping.</strong> A bootstrapping procedure that both refreshes a ciphertext and
+      applies a chosen function to the encrypted message at the same time.
+    </div>
+    <p>
+      For very small message spaces, the function can be represented as a lookup table.
+    </p>
+    <div class="example">
+      <strong>Lookup-table view.</strong> If the encrypted message is an \(m\)-bit integer, then a univariate function
+      can be represented by a table of size \(2^m\).
+    </div>
+    <div class="proof">
+      <strong>Why boolean FHE likes this.</strong> Comparisons, max/min, bitwise logic, and many short-integer
+      operations become natural when you can cheaply apply small lookup tables during bootstrapping.
+    </div>
+
+    <h3>6.3B Blind Rotation as the Inner Mechanism</h3>
+    <p>
+      The article peeks inside programmable bootstrapping and notes that, very roughly, a lookup table is represented
+      in an RLWE ciphertext and then <em>blindly rotated</em> by an encrypted amount.
+    </p>
+    <div class="intuition">
+      The point is not that the server sees the rotation amount; it does not. The point is that the encrypted message
+      controls which part of the table becomes aligned with the output position.
+    </div>
+
+    <h3>6.3C Scheme Switching</h3>
+    <p>
+      A major newer trend emphasized in the article is that FHE schemes are no longer totally isolated islands.
+    </p>
+    <div class="defn">
+      <strong>Scheme switching.</strong> Converting a ciphertext from one FHE scheme to another so different parts of a
+      program can be evaluated in the scheme best suited to each subtask.
+    </div>
+    <div class="example">
+      <strong>Hybrid idea.</strong> Use CKKS for large SIMD arithmetic, use CGGI for branching-heavy or low-precision
+      logic, and switch between them when needed.
     </div>
 
     <h3>6.4 Why New Matrix-Native Schemes Matter</h3>
@@ -550,6 +1078,27 @@
       arithmetic may be a better fit than a scheme that only becomes matrix-friendly after many layout conversions and
       auxiliary operations.
     </div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>GL starts from the workload we actually care about: matrix arithmetic.</p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          C = AB.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+        <pre><code>import jax.numpy as jnp
+
+def plain_matmul(A, B):
+    return A @ B</code></pre>
+      </div>
+    </div>
 
     <h3>6.6 How GL Differs from the Usual CKKS Mental Model</h3>
     <p>
@@ -569,6 +1118,30 @@
       "encrypted matrix" in the strongest sense. The GL direction is exciting because it tries to reduce that mismatch
       between the algebraic object used by the scheme and the algebraic object used by the application.
     </div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>CKKS-style workflows often express matrix algebra indirectly through packed-vector mechanics.</p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          AB
+          \quad\leadsto\quad
+          \text{pack} \to \text{rotate} \to \text{multiply} \to \text{sum}.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+        <pre><code>def rotate_and_sum(x):
+    y = x
+    y = y + jnp.roll(y, 1)
+    y = y + jnp.roll(y, 2)
+    return y</code></pre>
+      </div>
+    </div>
 
     <h3>6.7 What to Learn About GL Specifically</h3>
     <p>
@@ -584,6 +1157,236 @@
     <div class="block">
       <strong>Best beginner summary.</strong> Gentry-Lee matters because it asks whether fully homomorphic encryption
       can be redesigned so that matrix arithmetic is not a painful special case, but a central native feature.
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>The plaintext object is best thought of as a matrix or matrix family, not just a slot vector.</p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          M \in R^{n \times n}.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+        <pre><code>M = jnp.array([[1., 2.],
+               [3., 4.]])</code></pre>
+      </div>
+    </div>
+
+    <h3>6.8 A Mathematical Walkthrough of the GL Viewpoint</h3>
+    <p>
+      What follows is the right beginner mathematical model to keep in your head. It is a <em>schematic</em>
+      walkthrough of the GL direction rather than a claim that every implementation detail below is the literal public
+      specification of the scheme. The point is to understand the math the scheme is trying to optimize.
+    </p>
+    <div class="defn">
+      <strong>Target plaintext object.</strong> Instead of thinking of the plaintext as a single scalar or a packed
+      vector, think of it as a matrix
+      \[
+      M \in R^{n \times n}
+      \]
+      over some ring \(R\), often itself derived from modular or polynomial arithmetic.
+    </div>
+    <p>
+      The dream is to have an encryption map
+      \[
+      \mathsf{Enc}: R^{n \times n} \to \mathcal{C}
+      \]
+      from plaintext matrices into a ciphertext space \(\mathcal{C}\), together with a homomorphic evaluation rule
+      satisfying
+      \[
+      \mathsf{Dec}(\mathsf{Eval}(\otimes, \mathsf{Enc}(A), \mathsf{Enc}(B))) = AB
+      \]
+      for matrix multiplication.
+    </p>
+    <div class="intuition">
+      The entire GL motivation can be summarized this way: if the application wants matrix multiplication, then the
+      encrypted algebra should try to make <em>encrypted matrix multiplication look like matrix multiplication</em>,
+      rather than making it look like an awkward simulation built from slot shuffles.
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>The encrypted interface should preserve the shape of the mathematical operation.</p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          \mathsf{Dec}(\mathsf{Eval}(\otimes,\mathsf{Enc}(A),\mathsf{Enc}(B))) = AB.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In Ciphertext Code:</h4>
+        <pre><code>A = toy_encrypt([[1., 2.],
+                 [3., 4.]], label="A")
+B = toy_encrypt([[5., 6.],
+                 [7., 8.]], label="B")
+C = toy_matmul(A, B)</code></pre>
+      </div>
+    </div>
+
+    <h3>6.9 The Standard CKKS Reduction Versus the GL Goal</h3>
+    <p>
+      In a CKKS-style system, a matrix \(A\) is usually encoded into one or more packed ciphertexts. The real work is
+      then to engineer
+      \[
+      C = AB
+      \]
+      by translating matrix multiplication into a sequence of slotwise operations, rotations, and accumulations. One
+      can view this as replacing a clean algebraic identity by a long implementation identity:
+      \[
+      AB
+      \quad\leadsto\quad
+      \text{pack}(A), \text{pack}(B), \text{rotate}, \text{multiply}, \text{sum}, \text{rescale}, \dots
+      \]
+    </p>
+    <div class="proof">
+      <strong>Core mismatch.</strong> Matrix multiplication is bilinear:
+      \[
+      (A+B)C = AC + BC,
+      \qquad
+      A(B+C)=AB+AC,
+      \]
+      and its entries are defined by inner products:
+      \[
+      (AB)_{ij} = \sum_{k=1}^{n} A_{ik}B_{kj}.
+      \]
+      A scheme optimized around packed vectors must reconstruct this bilinear structure indirectly. The GL goal is to
+      move more of this bilinear structure into the native encrypted algebra itself.
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>The important structure is not just "multiply numbers," but bilinearity across rows and columns.</p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          (AB)_{ij} = \sum_{k=1}^{n} A_{ik}B_{kj}.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+        <pre><code>def matmul_entry(A, B, i, j):
+    return jnp.sum(A[i, :] * B[:, j])</code></pre>
+      </div>
+    </div>
+
+    <h3>6.10 The Algebraic Shape You Should Imagine</h3>
+    <p>
+      The cleanest abstract model is that a ciphertext represents a matrix-valued plaintext plus hidden noise:
+      \[
+      \widetilde{A} = A + E_A,
+      \qquad
+      \widetilde{B} = B + E_B,
+      \]
+      where \(A,B\) are the intended plaintext matrices and \(E_A, E_B\) are encrypted error objects that remain hidden
+      from the evaluator.
+    </p>
+    <p>
+      Then the homomorphic multiplication should behave schematically like
+      \[
+      \widetilde{A}\widetilde{B}
+      =
+      (A+E_A)(B+E_B)
+      =
+      AB + AE_B + E_AB + E_AE_B.
+      \]
+      The cryptographic problem is to ensure that the non-\(AB\) terms remain controlled enough that decryption still
+      recovers \(AB\) correctly.
+    </p>
+    <div class="intuition">
+      This is the matrix version of the standard FHE story: useful structure plus controlled error. The difference is
+      that the useful structure is now oriented around matrix algebra, not just scalar or packed-vector arithmetic.
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>Ciphertexts should be thought of as structured objects carrying hidden data plus noise.</p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          \widetilde{A}\widetilde{B}
+          =
+          AB + AE_B + E_AB + E_AE_B.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In Ciphertext Code:</h4>
+        <pre><code>@dataclass
+class ToyCiphertext:
+    payload: jax.Array
+    noise_budget: float
+
+def toy_matmul(ct1, ct2):
+    return ToyCiphertext(
+        payload=ct1.payload @ ct2.payload,
+        noise_budget=min(ct1.noise_budget, ct2.noise_budget) - 12.0,
+    )</code></pre>
+      </div>
+    </div>
+
+    <h3>6.11 Why Matrix-Native Structure Can Lower Cost</h3>
+    <p>
+      Suppose a traditional packed-vector implementation requires:
+    </p>
+    <ul class="steps">
+      <li>several ciphertext-ciphertext products,</li>
+      <li>many rotations,</li>
+      <li>layout conversions,</li>
+      <li>and expensive coefficient/slot rearrangements.</li>
+    </ul>
+    <p>
+      A matrix-native scheme tries to compress the same mathematical objective into something closer to:
+      \[
+      \mathsf{Enc}(A), \mathsf{Enc}(B)
+      \quad\mapsto\quad
+      \mathsf{Enc}(AB)
+      \]
+      with fewer auxiliary transformations.
+    </p>
+    <div class="example">
+      <strong>Idealized comparison.</strong> If a CKKS-style method says "perform matrix multiplication by decomposing
+      it into many packed-vector kernels," then the GL aspiration is "make the matrix product itself the kernel."
+    </div>
+    <div class="block">
+      <strong>What the speedup is really about.</strong> The gain is not magical. The gain comes from reducing the
+      number of expensive secondary operations needed to force the ciphertext representation to imitate matrix algebra.
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>The goal is fewer auxiliary operations between input matrices and output matrix.</p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          \mathsf{Enc}(A),\mathsf{Enc}(B)\mapsto \mathsf{Enc}(AB).
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In Ciphertext Code:</h4>
+        <pre><code># plain target
+C = A @ B
+
+# aspirational encrypted target
+C_enc = toy_matmul(A_enc, B_enc)</code></pre>
+      </div>
     </div>
 
     <h2 id="part7">Part VII: The Standard FHE Operations Vocabulary</h2>
@@ -727,6 +1530,26 @@
       do encrypted matrix products, then it can close a very real gap between cryptographic theory and useful machine
       learning systems.
     </div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>A matrix-first representation is valuable because ML workloads are matrix-first workloads.</p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          y = Wx + b,\qquad
+          C = AB.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+        <pre><code>def linear_layer(W, x, b):
+    return W @ x + b</code></pre>
+      </div>
+    </div>
     <div class="example">
       <strong>What to compare when reading GL material.</strong> Always compare it against a standard CKKS-style
       implementation and ask:
@@ -738,6 +1561,120 @@
       <li>Are matrix transforms supported directly?</li>
       <li>Does the structure map better to GPU or TPU execution?</li>
     </ul>
+
+    <h3>9.6 A Worked Mathematical Comparison</h3>
+    <p>
+      Let
+      \[
+      A,B \in R^{n \times n}.
+      \]
+      The plaintext goal is to compute
+      \[
+      C = AB,
+      \qquad
+      C_{ij} = \sum_{k=1}^{n} A_{ik}B_{kj}.
+      \]
+      This formula already tells you what any encrypted implementation must somehow reproduce.
+    </p>
+    <div class="example">
+      <strong>Naive scalar view.</strong> If each entry were encrypted separately, then computing one output entry
+      \(C_{ij}\) would require \(n\) encrypted multiplications and \(n-1\) encrypted additions. Computing the whole
+      matrix would therefore require \(n^3\) scalar products plus many additions.
+    </div>
+    <p>
+      Packed-vector FHE improves on this by evaluating many such products in parallel, but the evaluator then pays for
+      the privilege through nontrivial data motion. In effect, the algorithm must repeatedly answer:
+    </p>
+    <div class="proof">
+      <strong>Alignment problem.</strong> How do we move the encrypted data so that \(A_{ik}\) and \(B_{kj}\) land in
+      positions where a single ciphertext operation can combine them?
+    </div>
+    <p>
+      That is why rotations appear. The underlying matrix formula has an index \(k\) that must be summed over. Packed
+      FHE implementations often realize that sum by repeatedly aligning the \(k\)-th pieces and adding them up.
+    </p>
+    <div class="intuition">
+      The mathematics of matrix multiplication is simple. The engineering difficulty is that ciphertext layouts do not
+      naturally present row \(i\) of \(A\) and column \(j\) of \(B\) to each other in the right way.
+    </div>
+
+    <h3>9.7 The GL Hope in Formula Form</h3>
+    <p>
+      A matrix-native scheme aims to represent the encrypted object so that the bilinear map
+      \[
+      (A,B)\mapsto AB
+      \]
+      is reflected more directly in ciphertext space. In the best conceptual case, one imagines an encrypted product
+      rule
+      \[
+      \mathsf{Enc}(A)\star\mathsf{Enc}(B)
+      \approx
+      \mathsf{Enc}(AB),
+      \]
+      where \(\star\) is a ciphertext operation aligned with matrix multiplication itself.
+    </p>
+    <p>
+      The "\(\approx\)" is important. In lattice-based cryptography, encrypted computation is never exact in the naive
+      sense; there is always hidden structured error. A more realistic schematic identity is
+      \[
+      \mathsf{Enc}(A)\star\mathsf{Enc}(B)
+      =
+      \mathsf{Enc}(AB) + \text{controlled noise terms}.
+      \]
+    </p>
+    <div class="proof">
+      <strong>Why this is powerful.</strong> If the native ciphertext algebra already mirrors matrix multiplication,
+      then much of the usual index-bookkeeping disappears. The evaluator no longer spends as much effort translating
+      matrix algebra into slot algebra.
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>The scheme should lower from mathematical matrix algebra to ciphertext operations with less translation work.</p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          \mathsf{Enc}(A)\star\mathsf{Enc}(B)\approx \mathsf{Enc}(AB).
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In HEIR/OpenFHE Lowering:</h4>
+        <pre><code>%0 = openfhe.mul_no_relin %arg0, %arg1, %arg2
+%1 = openfhe.relin %arg0, %0
+%2 = openfhe.rot %arg0, %1 {static_shift = 4 : index}
+%3 = openfhe.add %arg0, %1, %2</code></pre>
+      </div>
+    </div>
+    <div class="example">
+      <strong>What to look for in a paper claim.</strong> If a GL-style paper says it uses only a small number of
+      ciphertext multiplications to realize a large matrix product, the mathematical claim is that the ciphertext
+      representation already encodes a large amount of bilinear structure that CKKS-style implementations often have to
+      reconstruct manually.
+    </div>
+
+    <h3>9.8 Hardware Interpretation</h3>
+    <p>
+      This math viewpoint also explains the hardware excitement. TPUs and GPUs are strong when the core workload looks
+      like dense linear algebra:
+      \[
+      C = AB,
+      \qquad
+      y = Wx,
+      \qquad
+      X^\top X,
+      \quad \text{etc.}
+      \]
+      If the encrypted primitive is itself closer to matrix multiplication, then the software stack has a better chance
+      of mapping onto those accelerators efficiently.
+    </p>
+    <div class="block">
+      <strong>Big picture.</strong> The GL story is not "we found a faster trick." It is closer to "we changed the
+      algebraic representation so that the dominant computation in private AI better matches both the ciphertext
+      mathematics and the accelerator hardware."
+    </div>
 
     <h2 id="part10">Part X: FHE for Machine Learning</h2>
 
@@ -767,6 +1704,23 @@
     <div class="intuition">
       Private inference is already challenging but often feasible. Private training is much harder because it requires
       many more rounds of high-depth arithmetic.
+    </div>
+
+    <h3>10.4 Writing FHE Programs Feels Like Writing Kernels</h3>
+    <p>
+      Another valuable point from the article is that writing FHE programs today still feels much more like writing
+      specialized kernels than writing ordinary application code.
+    </p>
+    <div class="block">
+      <strong>Arithmetic FHE rule.</strong> You avoid operations that are not polynomial, or you replace them with
+      low-degree polynomial approximations.
+    </div>
+    <div class="block">
+      <strong>Boolean FHE rule.</strong> You quantize aggressively and keep bit widths small so lookup tables and
+      bootstrap-heavy circuits remain feasible.
+    </div>
+    <div class="intuition">
+      This is one reason compilers matter so much. The programming model is still too manual for most people.
     </div>
 
     <h2 id="part11">Part XI: Compiler Systems and HEIR</h2>
@@ -831,6 +1785,10 @@
       FHE is expensive not just because the mathematics is sophisticated, but because ciphertexts are large and the
       arithmetic is heavy. Memory traffic, parallelism, and kernel quality matter enormously.
     </p>
+    <div class="proof">
+      <strong>Article overlap.</strong> One of the clearest hardware-level messages from the article is that arithmetic
+      FHE accelerators often boil down to NTT engines plus enough memory bandwidth and locality to feed them.
+    </div>
 
     <h3>12.2 CPU vs GPU vs TPU</h3>
     <div class="example">
@@ -859,6 +1817,740 @@
     <div class="block">
       <strong>Common beginner mistake.</strong> Looking only at runtime while ignoring key memory and communication
       cost. In practice, evaluation keys can be huge.
+    </div>
+
+    <h3>12.4 Pet Examples in JAX</h3>
+    <p>
+      JAX is a nice language for "thinking in kernels" because it makes dense numerical structure very explicit. These
+      examples are not encrypted implementations. They are small plain-text models of the kinds of linear algebra and
+      transformations that FHE systems, FHE compilers, and accelerator mappings care about.
+    </p>
+    <div class="proof">
+      <strong>Why JAX is relevant here.</strong> JAX provides a NumPy-style array API and transformation tools such as
+      <code>jit</code> and <code>vmap</code>, which makes it a convenient way to express matrix-centric workloads that
+      later motivate FHE compilation and hardware-aware optimization.
+    </div>
+
+    <h3>12.5 Pet Example 1: Plain Matrix Multiplication</h3>
+    <p>
+      Start with the ordinary matrix product
+      \[
+      C = AB,
+      \qquad
+      C_{ij} = \sum_{k=1}^{n} A_{ik}B_{kj}.
+      \]
+      In JAX, this is exactly what you would expect:
+    </p>
+    <pre><code>import jax
+import jax.numpy as jnp
+
+A = jnp.array([[1., 2.],
+               [3., 4.]])
+B = jnp.array([[5., 6.],
+               [7., 8.]])
+
+C = A @ B
+print(C)
+# [[19. 22.]
+#  [43. 50.]]</code></pre>
+    <div class="intuition">
+      This is the baseline picture. A matrix-native FHE scheme is exciting precisely because it tries to preserve this
+      clean "write down the matrix product directly" viewpoint for encrypted computation too.
+    </div>
+
+    <h3>12.6 Pet Example 2: Compiled Matrix Multiplication</h3>
+    <p>
+      JAX can compile a numerical function so it runs more like a backend kernel:
+    </p>
+    <pre><code>@jax.jit
+def matmul_fn(A, B):
+    return A @ B
+
+C = matmul_fn(A, B)</code></pre>
+    <div class="example">
+      <strong>FHE analogy.</strong> The source-level function is still "matrix multiply," but a compiler lowers it to
+      a much more optimized backend-specific execution plan. This is conceptually similar to what HEIR tries to do for
+      encrypted programs.
+    </div>
+
+    <h3>12.7 Pet Example 3: Batched Matrix Multiplication</h3>
+    <p>
+      Many ML workloads are really batches of matrix multiplications:
+      \[
+      C_b = A_bB_b,
+      \qquad b = 1,\dots,B.
+      \]
+      JAX expresses this naturally:
+    </p>
+    <pre><code>A_batch = jnp.arange(2 * 2 * 2, dtype=jnp.float32).reshape(2, 2, 2)
+B_batch = jnp.arange(2 * 2 * 2, dtype=jnp.float32).reshape(2, 2, 2)
+
+C_batch = jnp.matmul(A_batch, B_batch)
+print(C_batch.shape)
+# (2, 2, 2)</code></pre>
+    <div class="intuition">
+      This matters because "one ciphertext encodes many things at once" is a recurring FHE idea. Batched JAX code is a
+      good mental warmup for batched encrypted computation, even though the actual mechanisms differ.
+    </div>
+
+    <h3>12.8 Pet Example 4: Vectorizing a Small Kernel with <code>vmap</code></h3>
+    <p>
+      Sometimes we define a small operation once and then lift it across many inputs:
+    </p>
+    <pre><code>def row_dot(row, x):
+    return jnp.dot(row, x)
+
+W = jnp.array([[1., 0., 1.],
+               [0., 1., 1.],
+               [1., 1., 0.]])
+x = jnp.array([2., 3., 5.])
+
+y = jax.vmap(row_dot, in_axes=(0, None))(W, x)
+print(y)
+# [7. 8. 5.]</code></pre>
+    <div class="example">
+      <strong>Why this is useful.</strong> This is mathematically the same as the matrix-vector product \(y = Wx\),
+      but written as a lifted per-row kernel. Compiler systems often move back and forth between these equivalent
+      viewpoints.
+    </div>
+
+    <h3>12.9 Pet Example 5: Polynomial Multiplication as Convolution</h3>
+    <p>
+      Since FHE lives in polynomial rings, it helps to see polynomial multiplication in code too. If
+      \[
+      a(X)=a_0+a_1X+\cdots+a_dX^d,
+      \qquad
+      b(X)=b_0+b_1X+\cdots+b_eX^e,
+      \]
+      then multiplying them corresponds to coefficient convolution.
+    </p>
+    <pre><code>a = jnp.array([1., 2., 3.])   # 1 + 2X + 3X^2
+b = jnp.array([4., 5.])      # 4 + 5X
+
+c = jnp.convolve(a, b)
+print(c)
+# [ 4. 13. 22. 15.]</code></pre>
+    <div class="proof">
+      <strong>Math check.</strong> Indeed,
+      \[
+      (1+2X+3X^2)(4+5X)=4+13X+22X^2+15X^3.
+      \]
+      This is a good plain-language bridge from ordinary coding to the ring arithmetic underlying RLWE-style schemes.
+    </div>
+
+    <h3>12.10 Pet Example 6: Negacyclic Reduction</h3>
+    <p>
+      In a ring like
+      \[
+      R_q = \mathbb{Z}_q[X]/(X^N+1),
+      \]
+      we use the rule \(X^N \equiv -1\). Here is a toy JAX helper that multiplies coefficient vectors and then folds
+      them back into degree less than \(N\) using that negacyclic rule:
+    </p>
+      <pre><code>def negacyclic_mul_branchfree(a, b, N):
+    raw = jnp.convolve(a, b)
+    idx = jnp.arange(raw.shape[0])
+    sign = jnp.where(idx &lt; N, 1, -1)
+    wrapped_idx = idx % N
+    weighted = raw * sign
+    out = jnp.zeros((N,), dtype=raw.dtype)
+    return out.at[wrapped_idx].add(weighted)
+
+a = jnp.array([1., 2., 0., 0.])   # 1 + 2X
+b = jnp.array([3., 1., 0., 0.])   # 3 + X
+print(negacyclic_mul_branchfree(a, b, 4))
+# corresponds to (1 + 2X)(3 + X) modulo X^4 + 1</code></pre>
+    <div class="intuition">
+      This is still a toy, but it is much closer to cryptographic math than ordinary dense linear algebra. It shows
+      how polynomial-ring rules change the multiplication law itself.
+    </div>
+
+    <h3>12.11 Pet Example 7: Rotate-and-Sum</h3>
+    <p>
+      One common packed-FHE pattern is "multiply coordinatewise, then rotate and sum." In plain JAX, you can model
+      that kind of data motion with array rolls:
+    </p>
+    <pre><code>def rotate_and_sum(x):
+    y = x
+    y = y + jnp.roll(y, 1)
+    y = y + jnp.roll(y, 2)
+    return y
+
+x = jnp.array([1., 2., 3., 4.])
+print(rotate_and_sum(x))</code></pre>
+    <div class="example">
+      <strong>FHE connection.</strong> In packed schemes, rotations are expensive because they are not just array
+      indexing tricks; they require special evaluation keys and nontrivial ciphertext transformations. Seeing the
+      rotate-and-sum pattern in plain JAX helps you recognize why layout optimization matters so much.
+    </div>
+
+    <h3>12.12 Pet Example 8: A Toy Linear Layer</h3>
+    <p>
+      A single neural-network linear layer is just
+      \[
+      y = Wx + b.
+      \]
+      In JAX:
+    </p>
+    <pre><code>def linear_layer(W, x, b):
+    return W @ x + b
+
+W = jnp.array([[1., -1., 0.],
+               [0.,  2., 1.]])
+x = jnp.array([3., 4., 5.])
+b = jnp.array([0.5, -1.0])
+
+print(linear_layer(W, x, b))</code></pre>
+    <div class="intuition">
+      This is one reason encrypted matrix multiplication matters so much. A huge amount of private inference reduces to
+      repeated evaluation of layers of this form, plus some approximation of the nonlinearities between them.
+    </div>
+
+    <h3>12.13 How to Read These JAX Examples Through an FHE Lens</h3>
+    <ul class="steps">
+      <li><code>A @ B</code> is the clean mathematical target.</li>
+      <li><code>jax.jit</code> is a reminder that high-level math gets lowered into backend kernels.</li>
+      <li><code>jax.vmap</code> is a reminder that one local kernel can be lifted across many data items.</li>
+      <li>Polynomial multiplication reminds you that cryptographic arithmetic often happens in rings, not over reals.</li>
+      <li>Rotate-and-sum reminds you why slot layout and data motion dominate packed FHE performance.</li>
+    </ul>
+    <div class="block">
+      <strong>Bottom line.</strong> These are not encrypted algorithms, but they are the right pet examples for
+      building intuition. They show the algebraic patterns that FHE schemes and FHE compilers are trying to preserve,
+      compress, or accelerate.
+    </div>
+
+    <h3>12.14 Side-by-Side: Idea, Equation, Code</h3>
+    <p>
+      The next step is to put the three views next to each other. For each mini-example below, read in this order:
+      first the idea, then the equation, then the code. That habit is exactly what helps when reading FHE papers or
+      compiler systems work.
+    </p>
+
+    <h3>12.15 Side-by-Side Example A: Matrix-Vector Product</h3>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          A linear layer or a row-by-row scoring rule takes a matrix \(W\) and a vector \(x\), then forms a new vector
+          by dotting each row of \(W\) with \(x\).
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          y = Wx,
+          \qquad
+          y_i = \sum_{j=1}^{n} W_{ij}x_j.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+        <pre><code>W = jnp.array([[1., 0., 1.],
+               [0., 1., 1.],
+               [1., 1., 0.]])
+x = jnp.array([2., 3., 5.])
+
+y = W @ x
+print(y)
+# [7. 8. 5.]</code></pre>
+      </div>
+    </div>
+    <div class="intuition">
+      In FHE language, this is the kind of structured bilinear computation you want to preserve under encryption.
+      Matrix-native schemes try to keep this expression close to its original algebraic form.
+    </div>
+
+    <h3>12.16 Side-by-Side Example B: Polynomial Multiplication</h3>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          Multiply two polynomials by combining every coefficient of the first with every coefficient of the second.
+          This is exactly coefficient convolution.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          If
+          \[
+          a(X)=\sum_i a_iX^i,\qquad b(X)=\sum_j b_jX^j,
+          \]
+          then
+          \[
+          a(X)b(X)=\sum_k \left(\sum_{i+j=k} a_i b_j\right)X^k.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+        <pre><code>a = jnp.array([1., 2., 3.])   # 1 + 2X + 3X^2
+b = jnp.array([4., 5.])      # 4 + 5X
+
+c = jnp.convolve(a, b)
+print(c)
+# [ 4. 13. 22. 15.]</code></pre>
+      </div>
+    </div>
+    <div class="proof">
+      <strong>Connection to cryptography.</strong> RLWE-style schemes live in polynomial quotient rings, so this is
+      much closer to actual cryptographic arithmetic than ordinary floating-point matrix code.
+    </div>
+
+    <h3>12.17 Side-by-Side Example C: Negacyclic Reduction</h3>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          In a quotient ring like \(\mathbb{Z}_q[X]/(X^N+1)\), high powers of \(X\) are folded back using the rule
+          \(X^N \equiv -1\). So polynomial multiplication is followed by a structured reduction step.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          X^N \equiv -1,
+          \qquad
+          X^{N+t} \equiv -X^t.
+          \]
+          So coefficients past degree \(N-1\) wrap back with a sign flip.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+          <pre><code>def negacyclic_mul_branchfree(a, b, N):
+    raw = jnp.convolve(a, b)
+    idx = jnp.arange(raw.shape[0])
+    sign = jnp.where(idx &lt; N, 1, -1)
+    wrapped_idx = idx % N
+    weighted = raw * sign
+    out = jnp.zeros((N,), dtype=raw.dtype)
+    return out.at[wrapped_idx].add(weighted)</code></pre>
+      </div>
+    </div>
+    <div class="intuition">
+      This is the point where ordinary algebra starts to look like cryptographic algebra. You are no longer just
+      multiplying arrays; you are multiplying inside a chosen ring.
+    </div>
+
+    <h3>12.18 Side-by-Side Example D: Rotate-and-Sum</h3>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          Packed FHE often computes many values in parallel, then rotates the packed data to align terms that need to
+          be added together.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          If a packed vector is \(x=(x_0,\dots,x_{n-1})\), then a rotate-and-sum pattern tries to form expressions like
+          \[
+          x + \rho(x) + \rho^2(x) + \cdots
+          \]
+          where \(\rho\) denotes a slot rotation.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+        <pre><code>def rotate_and_sum(x):
+    y = x
+    y = y + jnp.roll(y, 1)
+    y = y + jnp.roll(y, 2)
+    return y
+
+x = jnp.array([1., 2., 3., 4.])
+print(rotate_and_sum(x))</code></pre>
+      </div>
+    </div>
+    <div class="example">
+      <strong>Why the code matters.</strong> In JAX this looks cheap because <code>roll</code> is just an array
+      operation. In packed FHE, the corresponding rotation is cryptographically expensive. That gap is exactly why
+      layout optimization is such a big deal.
+    </div>
+
+    <h3>12.19 Side-by-Side Example E: Matrix Multiplication and the GL Dream</h3>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          GL aims for an encrypted algebra where matrix multiplication is closer to a native operation, rather than a
+          long recipe built from slot tricks.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          Plaintext target:
+          \[
+          C = AB.
+          \]
+          Ideal encrypted goal:
+          \[
+          \mathsf{Enc}(A)\star\mathsf{Enc}(B)\approx \mathsf{Enc}(AB).
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX:</h4>
+        <pre><code>@jax.jit
+def plain_matmul(A, B):
+    return A @ B</code></pre>
+      </div>
+    </div>
+    <div class="intuition">
+      The plain JAX kernel is what you wish encrypted computation could feel like. The whole GL story is that the
+      ciphertext structure should move closer to this clean mathematical interface.
+    </div>
+
+    <h3>12.20 Toy Ciphertext Exposure in Code</h3>
+    <p>
+      You asked to see some ciphertext exposure in code. The example below is <strong>not a secure cryptosystem</strong>.
+      It is a didactic wrapper whose job is only to expose the shape of ciphertext-centric programming: encrypted
+      objects carry hidden values plus metadata such as a noise budget, and homomorphic operations update both.
+    </p>
+    <pre><code>from dataclasses import dataclass
+import jax.numpy as jnp
+
+@dataclass
+class ToyCiphertext:
+    payload: jax.Array
+    noise_budget: float
+    label: str = "ct"
+
+def toy_encrypt(x, *, noise_budget=100.0, label="ct"):
+    return ToyCiphertext(payload=jnp.array(x), noise_budget=noise_budget, label=label)
+
+def toy_decrypt(ct: ToyCiphertext):
+    return ct.payload
+
+def toy_add(ct1: ToyCiphertext, ct2: ToyCiphertext):
+    return ToyCiphertext(
+        payload=ct1.payload + ct2.payload,
+        noise_budget=min(ct1.noise_budget, ct2.noise_budget) - 1.0,
+        label=f"({ct1.label}+{ct2.label})",
+    )
+
+def toy_matmul(ct1: ToyCiphertext, ct2: ToyCiphertext):
+    return ToyCiphertext(
+        payload=ct1.payload @ ct2.payload,
+        noise_budget=min(ct1.noise_budget, ct2.noise_budget) - 12.0,
+        label=f"({ct1.label}@{ct2.label})",
+    )</code></pre>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          A ciphertext is not just a number. It is an object that stores encrypted content together with hidden algebra
+          and operational constraints.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          Schematic encrypted multiplication:
+          \[
+          \widetilde{A}\widetilde{B}
+          =
+          AB + \text{noise terms}.
+          \]
+          Operationally, the usable noise budget decreases after multiplication.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In Ciphertext Code:</h4>
+        <p>
+          In the toy wrapper, <code>payload</code> stands in for the hidden encrypted content, and
+          <code>noise_budget</code> stands in for the amount of remaining safe computation.
+        </p>
+      </div>
+    </div>
+
+    <h3>12.21 Toy Ciphertext Matrix Example</h3>
+    <p>
+      Now we can write code that at least <em>looks</em> like ciphertext-level matrix programming:
+    </p>
+    <pre><code>A = toy_encrypt([[1., 2.],
+                 [3., 4.]], label="A")
+B = toy_encrypt([[5., 6.],
+                 [7., 8.]], label="B")
+
+C = toy_matmul(A, B)
+
+print(C.label)
+# (A@B)
+print(C.noise_budget)
+# 88.0
+print(toy_decrypt(C))
+# [[19. 22.]
+#  [43. 50.]]</code></pre>
+    <div class="intuition">
+      This is the first step toward reading real FHE code. In actual libraries, the payload would be genuinely
+      encrypted, the budget logic would be tied to precise scheme mathematics, and operations like rotation,
+      relinearization, rescaling, or bootstrapping would show up explicitly.
+    </div>
+
+    <h3>12.22 Toy Ciphertext Rotation Exposure</h3>
+    <p>
+      Packed schemes also have ciphertext-level transforms that are not plain arithmetic. Here is a toy rotation:
+    </p>
+    <pre><code>def toy_rotate(ct: ToyCiphertext, shift: int):
+    return ToyCiphertext(
+        payload=jnp.roll(ct.payload, shift),
+        noise_budget=ct.noise_budget - 3.0,
+        label=f"rot({ct.label},{shift})",
+    )
+
+v = toy_encrypt([1., 2., 3., 4.], label="v")
+v_rot = toy_rotate(v, 1)
+print(v_rot.label)
+# rot(v,1)
+print(toy_decrypt(v_rot))
+# [4. 1. 2. 3.]</code></pre>
+    <div class="proof">
+      <strong>Why this is pedagogically useful.</strong> Real FHE code often has operations whose mathematical role is
+      "just rotate the packed data," but whose cryptographic cost is substantial. Seeing them as first-class methods on
+      ciphertext objects helps build the right mental model.
+    </div>
+
+    <h3>12.23 What This Toy Model Gets Right and Wrong</h3>
+    <ul class="steps">
+      <li>Right: ciphertexts are objects, not plain arrays.</li>
+      <li>Right: homomorphic operations consume a limited resource such as noise budget.</li>
+      <li>Right: matrix multiplication and rotation are distinct ciphertext operations.</li>
+      <li>Wrong: the toy wrapper is not secure, not parameterized like a real scheme, and not mathematically faithful in its noise accounting.</li>
+      <li>Wrong: real FHE libraries expose many more details, including keys, evaluation keys, scales, levels, and backend-specific representations.</li>
+    </ul>
+    <div class="block">
+      <strong>Best way to use this section.</strong> Treat the JAX examples as the plain mathematical target, and
+      treat the toy ciphertext wrapper as the first glimpse of what it means to program with encrypted objects rather
+      than ordinary arrays.
+    </div>
+
+    <h3>12.24 Where HEIR Fits Relative to JAX</h3>
+    <p>
+      Yes, we can bring HEIR into the examples, but we should do it honestly. The current official HEIR quickstart
+      documents a <em>Python frontend</em> using a <code>@compile()</code> decorator, and HEIR also documents a
+      <em>Jaxite exit dialect</em> for generating Python code against the Jaxite library API. That is slightly
+      different from saying "HEIR takes arbitrary <code>jax.numpy</code> programs directly as input."
+    </p>
+    <div class="proof">
+      <strong>Current official picture.</strong> HEIR says "write a program in Python, annotate the types to mark which
+      are secret, and HEIR will compile the rest," and the GitHub quickstart shows exactly that flow with
+      <code>from heir import compile</code>. Separately, HEIR documents a <code>jaxite</code> dialect as an exit
+      dialect for generating code against the Jaxite API.
+    </div>
+    <div class="intuition">
+      So the right mental model is: JAX shows us the clean numerical target; HEIR shows us how an FHE compiler can take
+      a high-level program and lower it toward encrypted execution; and Jaxite is one backend-facing path for Boolean
+      FHE code generation in the HEIR ecosystem.
+    </div>
+
+    <h3>12.25 Side-by-Side Example F: Plain Python to HEIR Scalar Program</h3>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          Start with a small arithmetic function, but mark the inputs as secret so the compiler knows it must preserve
+          privacy during evaluation.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          f(x,y) = (x+y)(x-y) + xy.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In HEIR:</h4>
+        <pre><code>from heir import compile
+from heir.mlir import I64, Secret
+
+@compile()
+def func(x: Secret[I64], y: Secret[I64]):
+    s = x + y
+    d = x - y
+    m = x * y
+    return s * d + m</code></pre>
+      </div>
+    </div>
+    <div class="example">
+      <strong>Why this matters.</strong> This is not just toy syntax. It is the official shape of the HEIR Python
+      quickstart. The program is written at a high level, but secrecy is made part of the type information.
+    </div>
+
+    <h3>12.26 Side-by-Side Example G: HEIR Execution Flow</h3>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          A compiled HEIR function gives you an interface that looks much more like real encrypted programming:
+          setup, encrypt inputs, evaluate on ciphertexts, then decrypt.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          c_x = \mathsf{Enc}(x),\qquad
+          c_y = \mathsf{Enc}(y),\qquad
+          c_z = \mathsf{Eval}(f, c_x, c_y),\qquad
+          z = \mathsf{Dec}(c_z).
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In HEIR:</h4>
+        <pre><code>func.setup()
+enc_x = func.encrypt_x(7)
+enc_y = func.encrypt_y(8)
+result_enc = func.eval(enc_x, enc_y)
+result = func.decrypt_result(result_enc)</code></pre>
+      </div>
+    </div>
+    <div class="intuition">
+      This is exactly the sort of ciphertext exposure you asked for, but now using the real interface style shown in
+      HEIR's official quickstart instead of only the toy wrapper we wrote ourselves.
+    </div>
+
+    <h3>12.27 Side-by-Side Example H: JAX View vs HEIR View</h3>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          The JAX version shows the numerical computation you want. The HEIR version shows the encrypted-computation
+          interface you need.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          Same mathematical function:
+          \[
+          f(x,y) = (x+y)(x-y)+xy.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In JAX and HEIR:</h4>
+        <pre><code># JAX / plain numeric view
+def f_plain(x, y):
+    return (x + y) * (x - y) + x * y
+
+# HEIR / secret typed view
+@compile()
+def f_secret(x: Secret[I64], y: Secret[I64]):
+    return (x + y) * (x - y) + x * y</code></pre>
+      </div>
+    </div>
+    <div class="proof">
+      <strong>Compiler lesson.</strong> The equation does not change. What changes is the programming model around it:
+      secrecy becomes explicit, compilation targets encrypted operations, and the runtime manipulates ciphertext objects
+      rather than plain arrays.
+    </div>
+
+    <h3>12.28 Side-by-Side Example I: Dot Product and the MLIR-Level HEIR View</h3>
+    <p>
+      The HEIR getting-started docs also show a dot-product example at the MLIR level. This is useful because it lets
+      you see how a familiar linear-algebra computation is represented inside the compiler.
+    </p>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          Compute a dot product of two secret vectors by multiplying coordinatewise and summing the results.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          \[
+          \langle x, y \rangle = \sum_{i=0}^{7} x_i y_i.
+          \]
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In HEIR MLIR:</h4>
+        <pre><code>func.func @dot_product(
+    %arg0: tensor&lt;8x i16&gt; {secret.secret},
+    %arg1: tensor&lt;8x i16&gt; {secret.secret}) -&gt; i16 {
+  %c0_si16 = arith.constant 0 : i16
+  %0 = affine.for %i = 0 to 8
+      iter_args(%acc = %c0_si16) -&gt; (i16) {
+    %x = tensor.extract %arg0[%i] : tensor&lt;8x i16&gt;
+    %y = tensor.extract %arg1[%i] : tensor&lt;8x i16&gt;
+    %m = arith.muli %x, %y : i16
+    %s = arith.addi %acc, %m : i16
+    affine.yield %s : i16
+  }
+  return %0 : i16
+}</code></pre>
+      </div>
+    </div>
+    <div class="intuition">
+      This is a great bridge example because the math is elementary, but the MLIR already makes the compiler structure
+      visible: loop, extract, multiply, accumulate, return.
+    </div>
+
+    <h3>12.29 Ciphertext Exposure from the HEIR Lowering</h3>
+    <p>
+      The same official HEIR dot-product walkthrough shows what the lowered encrypted operations can look like after
+      compilation to an OpenFHE-oriented exit dialect. That is exactly the kind of ciphertext exposure you want to get
+      used to reading.
+    </p>
+    <pre><code>%0 = openfhe.mul_no_relin %arg0, %arg1, %arg2
+%1 = openfhe.relin %arg0, %0
+%2 = openfhe.rot %arg0, %1 {static_shift = 4 : index}
+%3 = openfhe.add %arg0, %1, %2
+%4 = openfhe.rot %arg0, %3 {static_shift = 2 : index}
+%5 = openfhe.add %arg0, %3, %4
+%6 = openfhe.rot %arg0, %5 {static_shift = 1 : index}
+%7 = openfhe.add %arg0, %5, %6</code></pre>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Idea:</h4>
+        <p>
+          Multiply encrypted packed data, then rotate and add to accumulate the dot product.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>Math:</h4>
+        <p>
+          This is the packed analogue of
+          \[
+          \sum_i x_i y_i,
+          \]
+          where rotations help align partial sums.
+        </p>
+      </div>
+      <div class="compare-card">
+        <h4>In Ciphertext Ops:</h4>
+        <p>
+          Now you can literally see operations like multiply without relinearization, relinearize, rotate, and add.
+          This is what "ciphertext programming" begins to look like in a real compiler pipeline.
+        </p>
+      </div>
+    </div>
+
+    <h3>12.30 How HEIR Relates to the Earlier JAX Examples</h3>
+    <ul class="steps">
+      <li>The JAX examples show the clean numerical computation we want.</li>
+      <li>The toy ciphertext wrapper shows the first programming-model shift from arrays to ciphertext objects.</li>
+      <li>The HEIR Python example shows a real high-level encrypted frontend with secret-typed inputs.</li>
+      <li>The HEIR MLIR and OpenFHE snippets show how the computation lowers into explicit ciphertext operations.</li>
+      <li>The Jaxite dialect shows that HEIR also has an official path for generating code against the Jaxite API.</li>
+    </ul>
+    <div class="block">
+      <strong>Best mental model.</strong> JAX tells you what the math should look like. HEIR tells you how a compiler
+      can transform that high-level intent into encrypted operations. Reading both side by side is exactly the right
+      habit for learning modern FHE systems.
     </div>
 
     <h2 id="part13">Part XIII: How to Read the Referenced Papers and Videos</h2>
